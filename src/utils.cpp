@@ -1,6 +1,10 @@
 #include "utils.h"
 #include "patches.h"
 
+#include <dxgi.h>
+#define PSAPI_VERSION 2
+#include <psapi.h>
+
 typedef HRESULT(WINAPI *D3DGETBLOBPART)(LPCVOID pSrcData, SIZE_T SrcDataSize, UINT Part, UINT Flags, void **ppPart);
 HMODULE d3dHMOD = nullptr;
 D3DGETBLOBPART fpD3DGetBlobPart = nullptr;
@@ -303,4 +307,58 @@ void LogMessage(LogLevel level, bool showMessage, const char *err, ...)
 
   if (showMessage)
     MessageBoxA(nullptr, message, "Sekiro FPS Unlock And More Native", MB_OK | MB_ICONERROR);
+}
+
+void LogEnvironment()
+{
+  HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+  RTL_OSVERSIONINFOW os = {sizeof(os)};
+  auto getVersion = (LONG(WINAPI *)(RTL_OSVERSIONINFOW *))GetProcAddress(ntdll, "RtlGetVersion");
+  if (getVersion && getVersion(&os) == 0)
+    LogMessage(LogLevel::Info, false, "Windows %lu.%lu build %lu%s", os.dwMajorVersion, os.dwMinorVersion, os.dwBuildNumber,
+               GetProcAddress(ntdll, "wine_get_version") ? " (Wine/Proton)" : "");
+
+  auto getDpi = (UINT(WINAPI *)())GetProcAddress(GetModuleHandleA("user32.dll"), "GetDpiForSystem");
+  LogMessage(LogLevel::Info, false, "Primary screen %dx%d, %d monitor(s), %u dpi", GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
+             GetSystemMetrics(SM_CMONITORS), getDpi ? getDpi() : 0);
+
+  using CreateFactoryFn = HRESULT(WINAPI *)(REFIID, void **);
+  IDXGIFactory1 *factory = nullptr;
+  auto createFactory = (CreateFactoryFn)GetProcAddress(LoadLibraryA("dxgi.dll"), "CreateDXGIFactory1");
+  if (createFactory && SUCCEEDED(createFactory(__uuidof(IDXGIFactory1), (void **)&factory)))
+  {
+    IDXGIAdapter1 *adapter = nullptr;
+    for (UINT i = 0; factory->EnumAdapters1(i, &adapter) == S_OK; i++)
+    {
+      DXGI_ADAPTER_DESC1 desc;
+      LARGE_INTEGER driver = {};
+      adapter->GetDesc1(&desc);
+      adapter->CheckInterfaceSupport(__uuidof(IDXGIDevice), &driver);
+      LogMessage(LogLevel::Info, false, "GPU %u: %ls, vendor 0x%04X, driver %u.%u.%u.%u, %u MB", i, desc.Description, desc.VendorId,
+                 (unsigned)HIWORD(driver.HighPart), (unsigned)LOWORD(driver.HighPart), (unsigned)HIWORD(driver.LowPart),
+                 (unsigned)LOWORD(driver.LowPart), (unsigned)(desc.DedicatedVideoMemory >> 20));
+      adapter->Release();
+    }
+    factory->Release();
+  }
+
+  std::string settings;
+  for (const Setting &setting : defaultSettings)
+    settings += std::string(setting.key) + "=" + (setting.isFloat ? std::to_string(*(float *)setting.var) : std::to_string(*(int *)setting.var)) + " ";
+  LogMessage(LogLevel::Info, false, "Settings: %s", settings.c_str());
+
+  // overlays and other injectors (ReShade, Discord, RTSS, ...) are the usual suspects for a vanished picture or interface
+  HMODULE modules[512];
+  DWORD needed = 0;
+  char windir[MAX_PATH] = {};
+  GetWindowsDirectoryA(windir, MAX_PATH);
+  std::string others;
+  if (K32EnumProcessModules(GetCurrentProcess(), modules, sizeof(modules), &needed))
+    for (DWORD i = 0; i < std::min<DWORD>(needed, sizeof(modules)) / sizeof(HMODULE); i++)
+    {
+      char path[MAX_PATH] = {};
+      if (GetModuleFileNameA(modules[i], path, MAX_PATH) && _strnicmp(path, windir, strlen(windir)) != 0)
+        others += std::string(strrchr(path, '\\') ? strrchr(path, '\\') + 1 : path) + " ";
+    }
+  LogMessage(LogLevel::Info, false, "Modules outside Windows: %s", others.c_str());
 }

@@ -143,6 +143,8 @@ static bool BeginResolutionChange(HWND hWnd)
 
 static BOOL WINAPI DetourSetWindowPos(HWND hWnd, HWND after, int x, int y, int cx, int cy, UINT flags)
 {
+  if (!(flags & SWP_NOSIZE) && IsGameWindow(hWnd))
+    LogMessage(LogLevel::Info, false, "SetWindowPos %dx%d at %d,%d, flags 0x%X, iconic %d, resizing %d.", cx, cy, x, y, flags, IsIconic(hWnd), resizing);
   if ((flags & SWP_NOSIZE) || !BeginResolutionChange(hWnd))
     return fnSetWindowPos(hWnd, after, x, y, cx, cy, flags);
 
@@ -155,6 +157,8 @@ static BOOL WINAPI DetourSetWindowPos(HWND hWnd, HWND after, int x, int y, int c
 
 static BOOL WINAPI DetourMoveWindow(HWND hWnd, int x, int y, int cx, int cy, BOOL repaint)
 {
+  if (IsGameWindow(hWnd))
+    LogMessage(LogLevel::Info, false, "MoveWindow %dx%d at %d,%d, iconic %d, resizing %d.", cx, cy, x, y, IsIconic(hWnd), resizing);
   if (!BeginResolutionChange(hWnd))
     return fnMoveWindow(hWnd, x, y, cx, cy, repaint);
 
@@ -190,7 +194,9 @@ void InstallWindowHooks()
 // Called every frame while borderless windowed: only touches the window when it differs.
 void ApplyBorderlessPatch()
 {
-  if (FULLSCREEN_STATE || (!INITIALIZED && !BORDERLESS_ENABLED))
+  // a minimized window sits at -32000,-32000 with a tiny client area: covering the screen or taking that size as the
+  // game's resolution would break the window and the picture once it is restored
+  if (FULLSCREEN_STATE || (!INITIALIZED && !BORDERLESS_ENABLED) || IsIconic(GAME_WINDOW))
     return;
 
   if (BORDERLESS_ENABLED)
@@ -204,6 +210,15 @@ void ApplyBorderlessPatch()
     if (!restyle && cur.left == 0 && cur.top == 0 && cur.right == screenWidth && cur.bottom == screenHeight)
       return;
 
+    static char lastCover[160];
+    char cover[160];
+    snprintf(cover, sizeof(cover), "window %ld,%ld,%ld,%ld, restyle %d, virtual %ldx%ld, screen %dx%d", cur.left, cur.top, cur.right, cur.bottom, restyle,
+             virtualWidth, virtualHeight, screenWidth, screenHeight);
+    if (strcmp(cover, lastCover) != 0)
+    {
+      strcpy_s(lastCover, cover);
+      LogMessage(LogLevel::Info, false, "Borderless cover: %s.", cover);
+    }
     if (virtualWidth <= 0 || virtualHeight <= 0)
     {
       // the real client size is the selected resolution
@@ -370,7 +385,14 @@ static HRESULT STDMETHODCALLTYPE DetourPresent(IDXGISwapChain *swapChain, UINT s
 {
   if (refreshSwitch.exchange(false))
     SwitchRefreshRate(swapChain);
-  return fnPresent(swapChain, syncInterval, flags);
+  static HRESULT lastResult = S_OK;
+  HRESULT hr = fnPresent(swapChain, syncInterval, flags);
+  if (hr != lastResult) // e.g. DXGI_STATUS_OCCLUDED (0x087A0001) while minimized, or an error that blanks the picture
+  {
+    lastResult = hr;
+    LogMessage(SUCCEEDED(hr) ? LogLevel::Info : LogLevel::Error, false, "Present returned 0x%08lX.", (unsigned long)hr);
+  }
+  return hr;
 }
 
 // IDXGISwapChain::Present, taken from a swap chain made for that on a hidden window

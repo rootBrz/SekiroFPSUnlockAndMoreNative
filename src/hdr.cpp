@@ -91,7 +91,10 @@ HRESULT STDMETHODCALLTYPE ResizeBuffers(IDXGISwapChain *swapChain, UINT count, U
       count = 2;
     appliedSpace = -1;
   }
-  return swapChain->ResizeBuffers(count, width, height, format, flags);
+  HRESULT hr = swapChain->ResizeBuffers(count, width, height, format, flags);
+  LogMessage(SUCCEEDED(hr) ? LogLevel::Info : LogLevel::Error, false, "ResizeBuffers %ux%u, %u buffers, format %d, flags 0x%X, flip %d: 0x%08lX.", width,
+             height, count, (int)format, flags, swapChain == flipChain, (unsigned long)hr);
+  return hr;
 }
 
 // Whether the swap chain can show the colour space; the display of the window may change or have HDR turned off
@@ -122,6 +125,7 @@ uint64_t DetourHdrActive(int64_t *swapChain)
   // the screen mode, on the same thread.
   if (fullscreen != lastFullscreen)
   {
+    LogMessage(LogLevel::Info, false, "Flip swap chain fullscreen %d -> %d.", lastFullscreen, fullscreen);
     lastFullscreen = fullscreen;
     uint8_t *sys = *(uint8_t **)GetAbsoluteAddress(render_system_offset);
     uint32_t width = *(uint32_t *)(sys + 0x200), height = *(uint32_t *)(sys + 0x204);

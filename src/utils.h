@@ -35,6 +35,8 @@ void RefreshIniValues();
 void LogMessage(LogLevel level, bool showMessage, const char *err, ...);
 void SetupD3DCompilerProxy();
 void InstallCrashLogger();
+// Windows version, screens, GPUs, settings and the DLLs loaded next to the game, for bug reports
+void LogEnvironment();
 
 inline mINI::INIFile ini("SekiroFPSUnlockAndMoreNative.ini");
 inline mINI::INIStructure config;

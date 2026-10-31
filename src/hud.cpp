@@ -349,6 +349,10 @@ constexpr MovieJob jobs[] = {
     {"01_013_messagebox_small_nb.gfx", JOB_BACKDROPS},
     {"01_250_tutorialmessage.gfx", JOB_BACKDROPS},
     {"01_251_tutorialmsgdialog.gfx", JOB_BACKDROPS},
+    // the Remnants screen (recorded and viewed remnants)
+    {"01_031_bloodmessage_top.gfx", JOB_BACKDROPS},
+    {"01_034_bloodmessage_writelist.gfx", JOB_BACKDROPS},
+    {"01_035_bloodmessage_readlist.gfx", JOB_BACKDROPS},
 };
 constexpr size_t JOB_COUNT = sizeof(jobs) / sizeof(jobs[0]);
 Room jobRoom[JOB_COUNT];
@@ -359,6 +363,7 @@ std::atomic<bool> forgetRoots;
 
 void RunJob(Job job, const GValue &root, Room room)
 {
+  LogMessage(LogLevel::Info, false, "HUD job %d, room %.1f,%.1f.", (int)job, room.x, room.y);
   if (placed.size() > 4000) // clips of movies that are gone
     placed.clear();
   switch (job)

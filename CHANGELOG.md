@@ -2,6 +2,12 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.6.0
+
+- The dark backdrop of the Remnants screen now covers the whole picture on wider and narrower pictures (e.g. 21:9), not only the centre.
+- Minimizing the game (e.g. Alt+Tab) no longer lets the mod resize the minimized window or re-place the HUD, which should stop the interface from disappearing afterwards.
+- `SekiroFPSUnlockAndMoreNative.log` now lists the Windows version, GPUs, settings and loaded DLLs, and records window, HUD and swap chain changes, to make bug reports easier to investigate.
+
 ## 1.5.0
 
 - With HUD Layout Screen Edges, the frame of the player's posture bar and its posture break effects stay in the centre with the bar; they were moved to the left with the health bar on wider pictures.

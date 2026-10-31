@@ -156,6 +156,7 @@ DWORD WINAPI InitThread(LPVOID lpParam)
   // the render targets were built before the hook, so a chosen ratio needs them built again
   ApplyAspectRatio(ASPECT_RATIO_MODE != 0);
   InstallFixes();
+  LogEnvironment();
 
   // The game recreates its window when the resolution or screen mode changes, so follow it and
   // only shut down once no game window has been there for a while.
@@ -164,6 +165,8 @@ DWORD WINAPI InitThread(LPVOID lpParam)
     Sleep(100);
     if (HWND window = GetGameWindow())
     {
+      if (window != GAME_WINDOW)
+        LogMessage(LogLevel::Info, false, "Game window %p replaces %p.", (void *)window, (void *)GAME_WINDOW);
       GAME_WINDOW = window;
       missing = 0;
     }

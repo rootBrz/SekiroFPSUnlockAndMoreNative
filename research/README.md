@@ -75,7 +75,7 @@ whose clips (`Loop/instance1`, ...) the game fades by alpha every frame. Go from
 | `01_900_black`, `01_910_fade`, `01_200_dyingeffect`, `01_201_stealtheffect` | ExactFit always | Full screen fills and vignettes |
 | `02_903_nowloading2`, `02_904_nowloading3`, `02_905_nowloading_thanks`, `02_990_nowloading_userguide` | `instance1` (black, top left registration) stretched | Loading screen background |
 | `01_210_dead` | Backdrops (their innermost clips) stretched in its own Update hook (`0xD9CD90`), every frame while shown | Its timeline brings `WaitBegin/instance1` in |
-| `03_202_bonfire`, `02_280`-`02_284_getitem*`, `02_210_fullscreenmsgdialog`, `01_010`/`01_011`/`01_013_messagebox*`, `01_250_tutorialmessage`, `01_251_tutorialmsgdialog` | Unnamed clips that cover the stage stretched (found with getBounds) | Semi-transparent black behind menus and notifications |
+| `03_202_bonfire`, `02_280`-`02_284_getitem*`, `02_210_fullscreenmsgdialog`, `01_010`/`01_011`/`01_013_messagebox*`, `01_250_tutorialmessage`, `01_251_tutorialmsgdialog`, `01_031_bloodmessage_top`, `01_034_bloodmessage_writelist`, `01_035_bloodmessage_readlist` (Remnants) | Unnamed clips that cover the stage stretched (found with getBounds) | Semi-transparent black behind menus and notifications |
 | `01_060_caption`, `01_061_talk`, `01_210` texts, other `02_*` / `03_*` menus, `05_*` title | Nothing | Centred content; stretching distorts it |
 
 A missed background: dump the movie's tree (`tools/scaleform_tree_dump.cpp`), find the clip of about

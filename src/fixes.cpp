@@ -95,13 +95,29 @@ void HudViewport(Ctx *ctx)
       !ReadProcessMemory(GetCurrentProcess(), (LPCVOID)(namePtr + 0xB), name, sizeof(name) - 1, nullptr))
     return;
 
-  if (strstr(name, "01_000_fe.gfx"))
+  // the HUD movie always, other movies when the viewport size changed
+  static float lastWidth, lastHeight;
+  bool isHud = strstr(name, "01_000_fe.gfx") != nullptr;
+  if (isHud || ctx->xmm[5][0] != lastWidth || ctx->xmm[7][0] != lastHeight)
+  {
+    lastWidth = ctx->xmm[5][0];
+    lastHeight = ctx->xmm[7][0];
+    const uint32_t *res = (const uint32_t *)GetAbsoluteAddress(render_resolution_offset);
+    LogMessage(LogLevel::Info, false, "Viewport %s %.0fx%.0f, render %ux%u, mode %llu, layout %d.", name, lastWidth / 20.0f, lastHeight / 20.0f, res[0],
+               res[1], (unsigned long long)ctx->rdx, HUD_LAYOUT);
+  }
+
+  if (isHud)
   {
     // the HUD can be created with a 1920 x 1080 viewport that the game does not update for the render resolution
     // (e.g. fullscreen 2560 x 1080); the movies are given the render resolution again then
     const uint32_t *resolution = (const uint32_t *)GetAbsoluteAddress(render_resolution_offset);
-    if (fabsf(ctx->xmm[5][0] / 20.0f - resolution[0]) > 1 || fabsf(ctx->xmm[7][0] / 20.0f - resolution[1]) > 1)
+    bool differs = fabsf(ctx->xmm[5][0] / 20.0f - resolution[0]) > 1 || fabsf(ctx->xmm[7][0] / 20.0f - resolution[1]) > 1;
+    // not while the window is minimized or switching mode (zero size): the movies would be given an empty viewport
+    if (differs && ctx->xmm[5][0] > 0 && ctx->xmm[7][0] > 0 && resolution[0] > 0 && resolution[1] > 0)
       RelayoutHud();
+    else if (differs)
+      LogMessage(LogLevel::Info, false, "HUD relayout skipped, empty size.");
   }
   MovieViewport(name, ctx->xmm[5][0], ctx->xmm[7][0]);
 
@@ -146,15 +162,24 @@ volatile bool hudRelayout;
 
 uint64_t DetourManagerUpdate(uint8_t *manager, void *a2, void *a3, void *a4)
 {
-  if (hudRelayout)
+  // stays pending while the render resolution is zero (minimized), so it runs once the window is back
+  uint32_t *width = (uint32_t *)GetAbsoluteAddress(render_resolution_offset);
+  static bool deferredLogged;
+  if (hudRelayout && !(width[0] > 0 && width[1] > 0) && !deferredLogged)
+  {
+    deferredLogged = true;
+    LogMessage(LogLevel::Info, false, "HUD relayout waits, render size %ux%u.", width[0], width[1]);
+  }
+  if (hudRelayout && width[0] > 0 && width[1] > 0)
   {
     hudRelayout = false;
-   
+    deferredLogged = false;
+
     uint64_t count = *(uint64_t *)(manager + 2792);
     uint8_t *players = manager + 2528 + ((0 - (uintptr_t)(manager + 2528)) & 7);
     // a movie ignores a viewport equal to its current one, so go through a slightly wider viewport first
-    uint32_t *width = (uint32_t *)GetAbsoluteAddress(render_resolution_offset);
     uint32_t actual = *width;
+    LogMessage(LogLevel::Info, false, "HUD relayout of %llu movie players at %ux%u.", (unsigned long long)count, actual, width[1]);
     for (uint32_t w : {actual + 1, actual})
     {
       *width = w;
@@ -170,7 +195,11 @@ uint64_t DetourManagerUpdate(uint8_t *manager, void *a2, void *a3, void *a4)
 }
 } // namespace
 
-void RelayoutHud() { hudRelayout = true; }
+void RelayoutHud()
+{
+  LogMessage(LogLevel::Info, false, "HUD relayout requested.");
+  hudRelayout = true;
+}
 
 void InstallFixes()
 {
@@ -196,8 +225,28 @@ void InstallFixes()
   MidHook(awareness_culling_offset, culling, sizeof(culling), AwarenessCulling, "Awareness markers culling");
 }
 
+// Logs the window and picture state whenever it changes (focus, minimize, resize, screen mode): what the game and the mod saw around an Alt+Tab
+static void LogWindowState()
+{
+  static char last[256];
+  char now[256];
+  RECT window = {}, client = {};
+  GetWindowRect(GAME_WINDOW, &window);
+  GetClientRect(GAME_WINDOW, &client); // the borderless client size the game gets, not the real one
+  const uint32_t *res = (const uint32_t *)GetAbsoluteAddress(render_resolution_offset);
+  snprintf(now, sizeof(now), "window %p foreground %d iconic %d rect %ld,%ld %ldx%ld client %ldx%ld, render %ux%u, picture %.0fx%.0f, fullscreen %d.",
+           (void *)GAME_WINDOW, GetForegroundWindow() == GAME_WINDOW, IsIconic(GAME_WINDOW), window.left, window.top, window.right - window.left,
+           window.bottom - window.top, client.right, client.bottom, res[0], res[1], pictureWidth, pictureHeight, FULLSCREEN_STATE);
+  if (strcmp(now, last) != 0)
+  {
+    strcpy_s(last, now);
+    LogMessage(LogLevel::Info, false, "State: %s", now);
+  }
+}
+
 void UpdateFixes()
 {
+  LogWindowState();
   const uint8_t *system = *(const uint8_t **)GetAbsoluteAddress(render_system_offset);
   if (!IsValidReadPtr((uintptr_t)system + 160, sizeof(uintptr_t)))
     return;
