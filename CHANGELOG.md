@@ -2,6 +2,10 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.5.0
+
+- With HUD Layout Screen Edges, the frame of the player's posture bar and its posture break effects stay in the centre with the bar; they were moved to the left with the health bar on wider pictures.
+
 ## 1.4.0
 
 - The red vignette and the fade to black of the death screen show again with HUD Layout 16:9 or Screen Edges on a picture wider than 16:9 (e.g. 21:9 or Fill Screen on an ultrawide); they only showed with Stretch. Their backgrounds still cover the whole picture.

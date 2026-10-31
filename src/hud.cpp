@@ -191,7 +191,9 @@ struct Anchor
   int sideY;        // -1 top edge, +1 bottom edge, 0 stays
 };
 constexpr Anchor anchors[] = {
-    {"PlayerHUD/Gauge", -1, +1}, {"PlayerHUD/Gauge/SP", +1, 0}, // the player's posture stays in the centre
+    {"PlayerHUD/Gauge", -1, +1},
+    // the player's posture stays in the centre: the bar, its frame and the posture break effects
+    {"PlayerHUD/Gauge/SP", +1, 0}, {"PlayerHUD/Gauge/SPFrame", +1, 0}, {"PlayerHUD/Gauge/Damage", +1, 0},
     {"PlayerHUD/ItemPanel", +1, +1},
     {"Money", +1, +1}, {"PlayerCount", +1, +1}, {"GetItemList", +1, +1},
     {"SkillPoint", +1, -1}, {"BloodGhostRec", +1, -1},

@@ -85,8 +85,8 @@ reload), hook its class's Update as for the death screen.
 
 ### Clip trees (stage units: x y of the clip, width height)
 
-`01_000_fe` root (looked up by the game): `PlayerHUD` (960, 537; holds `Gauge` with `HP`, `SP` the player's posture,
-`Resurrection2`, `Equip`, and `ItemPanel` with `Item_Top/Bottom/Left/Right` and their names), `BossList` and
+`01_000_fe` root (looked up by the game): `PlayerHUD` (960, 537; holds `Gauge` with `HP`, `SP`, `SPFrame`, `Damage` the player's
+posture, `Resurrection2`, `Equip`, and `ItemPanel` with `Item_Top/Bottom/Left/Right` and their names), `BossList` and
 `SemiBossList` (`Item_N_0` with `HP`, `HPGauge`, `Name` on the left and `SP`, `SPFrame`, `SPCenter`, `Damage` the
 posture in the centre), `Money` (1702, 748), `SkillPoint` (1484, 88), `BloodGhostRec` (1692, 140), `PlayerCount`
 (1850, 995), `GetItemList` (1502, 695). Placed from the 3D scene every frame, not to be moved: `EnemyTag0-7`,
