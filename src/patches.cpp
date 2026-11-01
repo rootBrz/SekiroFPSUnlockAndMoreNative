@@ -206,13 +206,18 @@ void ApplyBorderlessPatch()
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     RECT cur;
     GetWindowRect(GAME_WINDOW, &cur);
-    bool restyle = GetWindowLongPtr(GAME_WINDOW, GWL_STYLE) != style;
+    // only the frame bits: the system adds WS_CLIPSIBLINGS to every top-level window, so comparing the whole style
+    // restyled (SetWindowLongPtr + SetWindowPos with SWP_FRAMECHANGED) on every frame
+    constexpr LONG_PTR frameBits = WS_POPUP | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE;
+    LONG_PTR curStyle = GetWindowLongPtr(GAME_WINDOW, GWL_STYLE);
+    bool restyle = (curStyle & frameBits) != style;
     if (!restyle && cur.left == 0 && cur.top == 0 && cur.right == screenWidth && cur.bottom == screenHeight)
       return;
 
     static char lastCover[160];
     char cover[160];
-    snprintf(cover, sizeof(cover), "window %ld,%ld,%ld,%ld, restyle %d, virtual %ldx%ld, screen %dx%d", cur.left, cur.top, cur.right, cur.bottom, restyle,
+    snprintf(cover, sizeof(cover), "window %ld,%ld,%ld,%ld, style 0x%llX, restyle %d, virtual %ldx%ld, screen %dx%d", cur.left, cur.top, cur.right, cur.bottom,
+             (unsigned long long)curStyle, restyle,
              virtualWidth, virtualHeight, screenWidth, screenHeight);
     if (strcmp(cover, lastCover) != 0)
     {
