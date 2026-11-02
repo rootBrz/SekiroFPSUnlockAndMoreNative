@@ -489,16 +489,13 @@ int64_t *DetourResList(int64_t *out, int64_t a2, char fullscreen, unsigned monit
   if (fullscreen)
     return out;
 
-  RECT desktop;
-  GetWindowRect(GetDesktopWindow(), &desktop);
   std::vector<std::pair<int, int>> modes;
   DEVMODEW dm = {};
   dm.dmSize = sizeof(dm);
   for (DWORD i = 0; EnumDisplaySettingsW(nullptr, i, &dm); i++)
   {
     std::pair<int, int> m(dm.dmPelsWidth, dm.dmPelsHeight);
-    if (m.first >= 800 && m.second >= 450 && m.first <= desktop.right - desktop.left && m.second <= desktop.bottom - desktop.top &&
-        std::find(modes.begin(), modes.end(), m) == modes.end())
+    if (m.first >= 800 && m.second >= 450 && std::find(modes.begin(), modes.end(), m) == modes.end())
       modes.push_back(m);
   }
   if (modes.empty())

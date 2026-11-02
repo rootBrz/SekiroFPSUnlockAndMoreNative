@@ -2,6 +2,10 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.7.1
+
+- Screen Resolution in Windowed and Borderless Windowed lists the display's modes that are larger than the desktop, e.g. NVIDIA DSR resolutions, as Fullscreen does. They were left out because the list was capped at the desktop size.
+
 ## 1.7.0
 
 - Borderless Fullscreen no longer restyles and re-places the game window on every frame. The mod compared the whole window style with its borderless style, but the system always adds `WS_CLIPSIBLINGS` to the window, so they never matched and every frame paid for a window style change and a move. This costs main-thread time everywhere and a lot under Wine/Proton (Steam Deck, Linux), where each of these calls goes through the wineserver.
