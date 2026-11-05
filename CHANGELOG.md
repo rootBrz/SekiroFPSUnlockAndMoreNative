@@ -2,6 +2,12 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.7.2
+
+- Fixed the interface (HUD and menus) disappearing after switching between Fullscreen and Borderless Windowed, or after Alt+Tab, until the game was restarted. This fix is for setups with Windows HDR turned on. I could not test it with HDR myself. If the interface still disappears, with or without HDR, please send `SekiroFPSUnlockAndMoreNative.log` (check that its first line shows 1.7.2).
+- Borderless and Windowed HDR now tell Windows the brightness range of your display, as the graphics driver does in Fullscreen. HDR in a window should look closer to Fullscreen HDR, with less clipping of bright areas.
+- `SekiroFPSUnlockAndMoreNative.log` shows the display's brightness range as `HDR10 metadata`.
+
 ## 1.7.1
 
 - Screen Resolution in Windowed and Borderless Windowed lists the display's modes that are larger than the desktop, e.g. NVIDIA DSR resolutions, as Fullscreen does. They were left out because the list was capped at the desktop size.

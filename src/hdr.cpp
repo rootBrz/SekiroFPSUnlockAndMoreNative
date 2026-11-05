@@ -19,10 +19,10 @@ namespace
 {
 using HdrActiveFn = uint64_t (*)(int64_t *swapChain);
 using HdrRowFn = void (*)(uint8_t *dialog);
-using RenderResizeFn = void (*)(void *sys, int width, int height);
+using WindowResizeFn = void (*)(uint8_t *window);
 HdrActiveFn fnHdrActive;
 HdrRowFn fnHdrRow;
-RenderResizeFn fnRenderResize;
+WindowResizeFn fnWindowResize;
 
 // the game's swap chain if it was created with the flip model
 std::atomic<IDXGISwapChain *> flipChain;
@@ -104,6 +104,45 @@ bool ColorSpaceSupported(IDXGISwapChain3 *chain, DXGI_COLOR_SPACE_TYPE space)
   return SUCCEEDED(chain->CheckColorSpaceSupport(space, &support)) && (support & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT);
 }
 
+// Windows shows the picture of a window as the display's own tone mapping would not: without the display's luminance
+// range a window's HDR10 picture is clipped or scaled by assumed values, while the driver sends the display's own range in
+// exclusive fullscreen. So the HDR10 metadata of the swap chain is the range of the display it is on.
+void SetHdrMetadata(IDXGISwapChain3 *chain, bool hdr10)
+{
+  IDXGISwapChain4 *chain4 = nullptr;
+  if (FAILED(chain->QueryInterface(__uuidof(IDXGISwapChain4), (void **)&chain4)))
+    return;
+  DXGI_HDR_METADATA_HDR10 meta = {};
+  IDXGIOutput *output = nullptr;
+  IDXGIOutput6 *output6 = nullptr;
+  DXGI_OUTPUT_DESC1 desc = {};
+  if (hdr10 && SUCCEEDED(chain->GetContainingOutput(&output)) && SUCCEEDED(output->QueryInterface(__uuidof(IDXGIOutput6), (void **)&output6)) &&
+      SUCCEEDED(output6->GetDesc1(&desc)))
+  {
+    auto primary = [](const float *xy, UINT16 *out) { out[0] = (UINT16)(xy[0] * 50000.0f + 0.5f), out[1] = (UINT16)(xy[1] * 50000.0f + 0.5f); };
+    primary(desc.RedPrimary, meta.RedPrimary);
+    primary(desc.GreenPrimary, meta.GreenPrimary);
+    primary(desc.BluePrimary, meta.BluePrimary);
+    primary(desc.WhitePoint, meta.WhitePoint);
+    meta.MaxMasteringLuminance = (UINT)desc.MaxLuminance;
+    meta.MinMasteringLuminance = (UINT)(desc.MinLuminance * 10000.0f);
+    meta.MaxContentLightLevel = (UINT16)desc.MaxLuminance;
+    meta.MaxFrameAverageLightLevel = (UINT16)desc.MaxFullFrameLuminance;
+    LogMessage(LogLevel::Info, false, "HDR10 metadata: peak %.0f nits, full frame %.0f nits, black %.4f nits.", desc.MaxLuminance, desc.MaxFullFrameLuminance,
+               desc.MinLuminance);
+  }
+  else
+    hdr10 = false;
+  HRESULT hr = chain4->SetHDRMetaData(hdr10 ? DXGI_HDR_METADATA_TYPE_HDR10 : DXGI_HDR_METADATA_TYPE_NONE, hdr10 ? sizeof(meta) : 0, hdr10 ? &meta : nullptr);
+  if (FAILED(hr))
+    LogMessage(LogLevel::Error, false, "SetHDRMetaData failed: 0x%08lX.", (unsigned long)hr);
+  if (output6)
+    output6->Release();
+  if (output)
+    output->Release();
+  chain4->Release();
+}
+
 // Per frame, from the game's update of its outputs: HDR10 in a window when the player's HDR option is on.
 uint64_t DetourHdrActive(int64_t *swapChain)
 {
@@ -121,16 +160,26 @@ uint64_t DetourHdrActive(int64_t *swapChain)
 
   // Unlike the blt model, a flip model swap chain needs its buffers resized after it entered or left exclusive
   // fullscreen, otherwise every Present fails (black screen, and the game falls back to windowed). The game's own
-  // resize of its render system does it, as when the resolution changes; it runs here right after the game applied
-  // the screen mode, on the same thread.
+  // handler of a window resize does it, as when the resolution changes, but only for a size that differs from the one it
+  // remembers, and it also applies the pending screen mode and tells the UI. So its remembered size is cleared and the
+  // handler runs here. It focuses the window, which must not happen while the player is switching away: it waits until
+  // the game window is in front.
+  static bool resizePending;
   if (fullscreen != lastFullscreen)
   {
     LogMessage(LogLevel::Info, false, "Flip swap chain fullscreen %d -> %d.", lastFullscreen, fullscreen);
     lastFullscreen = fullscreen;
-    uint8_t *sys = *(uint8_t **)GetAbsoluteAddress(render_system_offset);
-    uint32_t width = *(uint32_t *)(sys + 0x200), height = *(uint32_t *)(sys + 0x204);
-    if (width && height)
-      fnRenderResize(sys, width, height);
+    resizePending = true;
+  }
+  if (resizePending && GetForegroundWindow() == GAME_WINDOW)
+  {
+    resizePending = false;
+    uint8_t *window = *(uint8_t **)GetAbsoluteAddress(window_singleton_offset);
+    if (IsValidReadPtr((uintptr_t)window, 112))
+    {
+      *(uint32_t *)(window + 96) = *(uint32_t *)(window + 100) = 0;
+      fnWindowResize(window);
+    }
   }
 
   IDXGISwapChain3 *chain3 = nullptr;
@@ -153,7 +202,12 @@ uint64_t DetourHdrActive(int64_t *swapChain)
   if (appliedSpace != (int)space)
   {
     if (SUCCEEDED(chain3->SetColorSpace1(space)))
+    {
       appliedSpace = space;
+      // exclusive fullscreen gets the display's range from the driver
+      if (!fullscreen)
+        SetHdrMetadata(chain3, on);
+    }
     else
       on = false;
   }
@@ -210,7 +264,11 @@ void InstallWindowedHdr()
 {
   if (!WINDOWED_HDR_ENABLED)
     return;
-  fnRenderResize = (RenderResizeFn)GetAbsoluteAddress(render_resize_offset);
+  constexpr uint8_t windowResizeBytes[] = {0x48, 0x8B, 0xC4, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8B, 0xEC, 0x48};
+  uintptr_t windowResize = GetAbsoluteAddress(window_resize_offset);
+  if (memcmp((void *)windowResize, windowResizeBytes, sizeof(windowResizeBytes)) != 0)
+    return LogMessage(LogLevel::Error, false, "Window resize: unexpected bytes, windowed HDR disabled");
+  fnWindowResize = (WindowResizeFn)windowResize;
 
   constexpr uint8_t createBytes[] = {0x48, 0x8B, 0x01, 0xFF, 0x50, 0x50}; // mov rax,[rcx]; call [rax+50h]
   uintptr_t create = GetAbsoluteAddress(swapchain_create_call_offset);

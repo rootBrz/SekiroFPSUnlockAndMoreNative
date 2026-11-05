@@ -37,6 +37,7 @@ constexpr uintptr_t render_resolution_offset = 0x3B1D100; // int32 width, height
 constexpr uintptr_t render_system_offset = 0x3F3B400; // pointer to the render system
 constexpr uintptr_t render_targets_offset = 0x12ABD0; // builds the render targets, letterboxed to the aspect ratio pair
 constexpr uintptr_t render_resize_offset = 0x12EBB0;  // (sys, width, height): resize path of the render system
+constexpr uintptr_t window_resize_offset = 0x11B46B0; // (CSWindow): the handler of a window resize; gets the size, applies pending screen settings, calls render_resize_offset if it differs from the size at +96/+100
 constexpr uintptr_t present_interval_offset = 0x21E760; // GXSwapChainCtrl: returns the DXGI sync interval, once per frame
 constexpr uintptr_t window_singleton_offset = 0x3EA0BF8; // CSWindow pointer; dword +128 == 1 while fullscreen
 constexpr uintptr_t is_game_in_loading_offset = 0x3D7ACB3;
