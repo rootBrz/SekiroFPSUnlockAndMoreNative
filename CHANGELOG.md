@@ -2,6 +2,11 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.8.0
+
+- With Windows HDR on, the interface (HUD and menus) no longer disappears after minimizing the game or switching between Fullscreen, Windowed and Borderless Windowed, also when the size changes with the mode (e.g. Fullscreen at 2560x1440 to a 2560x1080 window). 1.7.2 did not fix this. The 3D picture was still drawn, and only a restart of the game brought the interface back.
+- `SekiroFPSUnlockAndMoreNative.log` shows when the HDR state changes.
+
 ## 1.7.2
 
 - Fixed the interface (HUD and menus) disappearing after switching between Fullscreen and Borderless Windowed, or after Alt+Tab, until the game was restarted. This fix is for setups with Windows HDR turned on. I could not test it with HDR myself. If the interface still disappears, with or without HDR, please send `SekiroFPSUnlockAndMoreNative.log` (check that its first line shows 1.7.2).

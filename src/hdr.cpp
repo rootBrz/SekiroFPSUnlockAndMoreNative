@@ -171,7 +171,9 @@ uint64_t DetourHdrActive(int64_t *swapChain)
     lastFullscreen = fullscreen;
     resizePending = true;
   }
-  if (resizePending && GetForegroundWindow() == GAME_WINDOW)
+  // Only from the game's per frame call: the state is also asked for while the game builds its render targets, on a
+  // resize of its own when the size changes with the screen mode, and a resize inside of that leaves them broken.
+  if (resizePending && __builtin_return_address(0) == (void *)GetAbsoluteAddress(hdr_active_frame_return_offset) && GetForegroundWindow() == GAME_WINDOW)
   {
     resizePending = false;
     uint8_t *window = *(uint8_t **)GetAbsoluteAddress(window_singleton_offset);
@@ -197,6 +199,17 @@ uint64_t DetourHdrActive(int64_t *swapChain)
   bool available = !fullscreen && supported;
   bool on = fullscreen ? (active & 1) && supported : available && *((uint8_t *)swapChain + 0x3058) == 0; // set when the HDR option is off
   windowedHdrAvailable = available;
+
+  // The render targets are built for the HDR state of that moment, and the interface is not drawn on targets built for
+  // another one. After entering exclusive fullscreen the game reports its HDR as off for the first frames, when the resize
+  // above has just run, so they are built again when the state changes.
+  static int lastOn = -1;
+  if (lastOn >= 0 && lastOn != (int)on)
+  {
+    LogMessage(LogLevel::Info, false, "HDR state %d -> %d, render targets are built again.", lastOn, (int)on);
+    resizePending = true;
+  }
+  lastOn = on;
 
   DXGI_COLOR_SPACE_TYPE space = on ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
   if (appliedSpace != (int)space)
