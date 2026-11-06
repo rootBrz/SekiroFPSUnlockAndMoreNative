@@ -171,17 +171,16 @@ uint64_t DetourHdrActive(int64_t *swapChain)
     lastFullscreen = fullscreen;
     resizePending = true;
   }
-  static bool resizing; // the render targets being built ask for the HDR state too
-  if (resizePending && !resizing && GetForegroundWindow() == GAME_WINDOW)
+  // Only from the game's per frame call: the state is also asked for while the game builds its render targets, on a
+  // resize of its own when the size changes with the screen mode, and a resize inside of that leaves them broken.
+  if (resizePending && __builtin_return_address(0) == (void *)GetAbsoluteAddress(hdr_active_frame_return_offset) && GetForegroundWindow() == GAME_WINDOW)
   {
     resizePending = false;
     uint8_t *window = *(uint8_t **)GetAbsoluteAddress(window_singleton_offset);
     if (IsValidReadPtr((uintptr_t)window, 112))
     {
       *(uint32_t *)(window + 96) = *(uint32_t *)(window + 100) = 0;
-      resizing = true;
       fnWindowResize(window);
-      resizing = false;
     }
   }
 

@@ -48,6 +48,7 @@ constexpr uintptr_t fullscreen_refreshrate_num = 0x1B62D3F;
 constexpr uintptr_t swapchain_create_call_offset = 0x1B624F4; // mov rax,[rcx]; call [rax+50h]: IDXGIFactory::CreateSwapChain of the game's swap chain
 constexpr uintptr_t swapchain_resize_call_offset = 0x1B62C1E; // the stack arguments and call [rdi+68h] of IDXGISwapChain::ResizeBuffers
 constexpr uintptr_t hdr_active_offset = 0x24C61C0;            // (swap chain): whether the HDR output is on, the game's HDR rendering follows it
+constexpr uintptr_t hdr_active_frame_return_offset = 0x12D050; // return address of the per frame call of hdr_active_offset; the other call is in the render targets builder
 constexpr uintptr_t options_hdr_row_offset = 0xCD9030;        // (dialog): state of the HDR row of the graphics settings, locked unless fullscreen
 
 inline uintptr_t is_game_in_loading_addr;
