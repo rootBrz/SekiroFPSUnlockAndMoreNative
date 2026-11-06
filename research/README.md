@@ -114,6 +114,7 @@ cover the stage are stretched; stretching the outer ones kept the vignettes at a
   target size; `+0x218 + 40 * n` the aspect ratio pairs. The aspect ratio hook (`0x12ABD0`) is installed after the
   targets are built, so they are built again at startup when a ratio is chosen. A HUD can be created with a
   1920 x 1080 viewport the game does not update (fullscreen 2560 x 1080), see `HudViewport`.
+- **HDR and the render targets**: the builder (`0x12ABD0`) stores the HDR state (`0x24C61C0`) at output `+0x144` and branches on it. With a flip model swap chain, the game reports HDR as off for the first frames after entering exclusive fullscreen. Targets built in those frames show the 3D scene but not the interface, until they are built again with HDR on (`DetourHdrActive` in `src/hdr.cpp`). To test it, minimize for real (`WM_SYSCOMMAND SC_MINIMIZE`): an Alt+Tab does not always leave exclusive fullscreen.
 - **Refresh rate**: the swap chain is not reachable from the render system objects (the DXGI object at `+0xC0` is not
   one). `IDXGISwapChain::Present` is hooked through a swap chain made on a hidden window, and `ResizeTarget` runs in
   it. The 60 hz immediates of Lyall's SekiroFix (`0x12CAAF`, `0x128FFFA`) and the numerator / denominator detour at
