@@ -369,6 +369,7 @@ void BuildOptions()
   AddToggle(str::SkipLogos, str::SkipLogosHelp, INTROSKIP_ENABLED, "EnableIntroSkip", nullptr, 1);
   AddToggle(str::DeathPenalties, str::DeathPenaltiesHelp, DISABLE_DEATH_PENALTIES_ENABLED, "DisableDeathPenalties", ApplyDeathPenaltiesPatch);
   AddToggle(str::Dragonrot, str::DragonrotHelp, DISABLE_DRAGONROT_ENABLED, "DisableDragonrot", ApplyDragonrotPatch);
+  AddToggle(str::QuitToDesktop, str::QuitToDesktopHelp, QUIT_TO_DESKTOP_ENABLED, "QuitToDesktop");
 
   buildPage = PAGE_CAMERA;
   AddToggle(str::CamReset, str::CamResetHelp, DISABLE_CAMRESET_ENABLED, "DisableCamReset", ApplyCamResetPatch);

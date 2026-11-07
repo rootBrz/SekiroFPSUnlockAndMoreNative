@@ -2,6 +2,10 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.9.0
+
+- New option **Quit Game to Desktop** in Game Options (off by default): Quit Game saves and then closes the game, instead of stopping at the title screen and its network connection. The game is closed as soon as the title screen comes up after the save.
+
 ## 1.8.0
 
 - With Windows HDR on, the interface (HUD and menus) no longer disappears after minimizing the game or switching between Fullscreen, Windowed and Borderless Windowed, also when the size changes with the mode (e.g. Fullscreen at 2560x1440 to a 2560x1080 window). 1.7.2 did not fix this. The 3D picture was still drawn, and only a restart of the game brought the interface back.

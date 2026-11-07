@@ -2,6 +2,7 @@
 #include "MinHook.h"
 #include "hud.h"
 #include "offset.h"
+#include "quit.h"
 #include "utils.h"
 
 #include <cmath>
@@ -120,6 +121,7 @@ void HudViewport(Ctx *ctx)
       LogMessage(LogLevel::Info, false, "HUD relayout skipped, empty size.");
   }
   MovieViewport(name, ctx->xmm[5][0], ctx->xmm[7][0]);
+  QuitToDesktopViewport(name, isHud);
 
   if (strstr(name, "01_910_fade.gfx") || strstr(name, "01_900_black.gfx") || strstr(name, "01_200_dyingeffect.gfx") ||
       strstr(name, "01_201_stealtheffect.gfx"))

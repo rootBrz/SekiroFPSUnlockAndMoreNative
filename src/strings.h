@@ -76,6 +76,23 @@ inline const Text DragonrotHelp = {L"Dragonrot no longer spreads to NPCs.",
                                    L"龍咳不再傳染給NPC。",
                                    L"โรคมังกรจะไม่แพร่ไปยัง NPC อีก"};
 
+inline const Text QuitToDesktop = {L"Quit Game to Desktop", L"Quitter vers le bureau", L"Esci al desktop", L"Zum Desktop beenden",
+                                   L"Salir al escritorio", L"Sair para a área de trabalho", L"Wyjdź na pulpit", L"Выход на рабочий стол",
+                                   L"デスクトップに終了", L"바탕화면으로 종료", L"退出到桌面", L"退出至桌面", L"ออกเกมไปที่เดสก์ท็อป"};
+inline const Text QuitToDesktopHelp = {L"Quit Game saves and then closes the game instead of staying at the title screen.",
+                                       L"Quitter le jeu sauvegarde puis ferme le jeu au lieu de rester sur l'écran titre.",
+                                       L"Esci dal gioco salva e poi chiude il gioco invece di restare nella schermata del titolo.",
+                                       L"Spiel beenden speichert und schließt dann das Spiel, statt im Titelbildschirm zu bleiben.",
+                                       L"Salir del juego guarda y después cierra el juego en lugar de quedarse en la pantalla de título.",
+                                       L"Sair do jogo salva e depois fecha o jogo em vez de ficar na tela de título.",
+                                       L"Wyjście z gry zapisuje, a potem zamyka grę zamiast zostawać na ekranie tytułowym.",
+                                       L"Выход из игры сохраняет и закрывает игру, а не оставляет её на титульном экране.",
+                                       L"ゲーム終了でセーブした後、タイトル画面に留まらずにゲームを閉じます。",
+                                       L"게임 종료 시 저장한 뒤 타이틀 화면에 머무르지 않고 게임을 닫습니다.",
+                                       L"退出游戏时保存后直接关闭游戏，不停留在标题画面。",
+                                       L"結束遊戲時存檔後直接關閉遊戲，不停留在標題畫面。",
+                                       L"เมื่อเลือกออกจากเกม เกมจะเซฟแล้วปิดทันทีโดยไม่ค้างอยู่ที่หน้าไตเติ้ล"};
+
 inline const Text CamReset = {L"Disable Camera Reset", L"Désactiver la réinitialisation de la caméra", L"Disattiva reimpostazione telecamera",
                               L"Kamera-Zurücksetzen deaktivieren", L"Desactivar reinicio de cámara", L"Desativar redefinição da câmera", L"Wyłącz resetowanie kamery",
                               L"Отключить сброс камеры", L"カメラリセットを無効化", L"카메라 초기화 끄기", L"禁用镜头重置", L"停用鏡頭重置", L"ปิดการรีเซ็ตกล้อง"};

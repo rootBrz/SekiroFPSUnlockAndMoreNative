@@ -84,6 +84,7 @@ inline int DISABLE_CAMERA_AUTOROTATE_ENABLED;
 inline int VSYNC_ENABLED;
 inline int DISABLE_DEATH_PENALTIES_ENABLED;
 inline int DISABLE_DRAGONROT_ENABLED;
+inline int QUIT_TO_DESKTOP_ENABLED;
 // the game's sound volumes (0-10, -1 = not known yet), remembered for the next start
 inline int SOUND_VOLUME_MUSIC;
 inline int SOUND_VOLUME_EFFECTS;
