@@ -110,6 +110,23 @@ inline const Text CamResetHelp = {L"Locking on with no target in sight no longer
                                   L"視野中沒有目標時鎖定不再重置鏡頭。",
                                   L"การล็อกเป้าเมื่อไม่มีเป้าหมายในสายตาจะไม่จัดกล้องกลับกลางอีก"};
 
+inline const Text LockOnDot = {L"Hide Lock-on Dot", L"Masquer le point de verrouillage", L"Nascondi punto di aggancio",
+                               L"Anvisier-Punkt ausblenden", L"Ocultar punto de fijación", L"Ocultar ponto de trava", L"Ukryj punkt namierzania",
+                               L"Скрыть точку захвата цели", L"ロックオンの点を非表示", L"록온 점 숨기기", L"隐藏锁定圆点", L"隱藏鎖定圓點", L"ซ่อนจุดล็อกเป้า"};
+inline const Text LockOnDotHelp = {L"Hides the dot that marks the locked-on target.",
+                                   L"Masque le point qui marque la cible verrouillée.",
+                                   L"Nasconde il punto che indica il bersaglio agganciato.",
+                                   L"Blendet den Punkt aus, der das anvisierte Ziel markiert.",
+                                   L"Oculta el punto que marca el objetivo fijado.",
+                                   L"Oculta o ponto que marca o alvo travado.",
+                                   L"Ukrywa punkt oznaczający namierzony cel.",
+                                   L"Скрывает точку, отмечающую захваченную цель.",
+                                   L"ロックオン中の敵を示す点を非表示にします。",
+                                   L"록온한 대상을 표시하는 점을 숨깁니다.",
+                                   L"隐藏标记锁定目标的圆点。",
+                                   L"隱藏標記鎖定目標的圓點。",
+                                   L"ซ่อนจุดที่ระบุเป้าหมายที่ล็อกอยู่"};
+
 inline const Text CamAutorotate = {L"Disable Camera Autorotate", L"Désactiver la rotation auto de la caméra", L"Disattiva rotazione automatica telecamera",
                                    L"Automatische Kameradrehung deaktivieren", L"Desactivar giro automático de cámara", L"Desativar rotação automática da câmera",
                                    L"Wyłącz automatyczny obrót kamery", L"Отключить автоповорот камеры", L"カメラ自動回転を無効化", L"카메라 자동 회전 끄기",
