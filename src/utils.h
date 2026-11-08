@@ -80,6 +80,7 @@ enum HudLayout
 inline int HUD_LAYOUT;
 inline int FOV_ENABLED;
 inline int DISABLE_CAMRESET_ENABLED;
+inline int HIDE_LOCKON_ENABLED;
 inline int DISABLE_CAMERA_AUTOROTATE_ENABLED;
 inline int VSYNC_ENABLED;
 inline int DISABLE_DEATH_PENALTIES_ENABLED;

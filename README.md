@@ -19,7 +19,7 @@ All settings are in the game's **Settings** menu (main menu and pause menu) and 
 | Page             | Options                                                                    |
 | ---------------- | -------------------------------------------------------------------------- |
 | Game Options     | Autoloot, Skip Logos (restart), Disable Death Penalties, Disable Dragonrot |
-| Camera Options   | Disable Camera Reset, Disable Camera Autorotate, Field of View             |
+| Camera Options   | Disable Camera Reset, Disable Camera Autorotate, Field of View, Hide Lock-on Dot |
 | Graphics Options | FPS Limit (unlock), VSync, Aspect Ratio, HUD Layout                        |
 
 - **Screen Mode** also offers Borderless Windowed: the window always covers the screen while the game renders at the selected resolution.

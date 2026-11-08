@@ -201,8 +201,26 @@ constexpr Anchor anchors[] = {
 };
 constexpr const char *bossPosture[] = {"SP", "SPFrame", "SPCenter", "Damage"}; // stays in the centre
 
+// The lock-on dot is the HUD clip "LockOn", which the game places from the 3D scene; it is hidden by its alpha, as
+// the game shows and hides it through its visibility. The alpha is only put back if it was hidden before.
+bool lockOnHidden;
+
+void ApplyLockOnDot(const GValue &root)
+{
+  if (!HIDE_LOCKON_ENABLED && !lockOnHidden)
+    return;
+  AtPath(root, "LockOn", [](const GValue &clip) {
+    GValue alpha;
+    alpha.type = VT_NUMBER;
+    alpha.number = HIDE_LOCKON_ENABLED ? 0 : 1;
+    fnSetMember(clip.oi, clip.data, "alpha", &alpha, true);
+  });
+  lockOnHidden = HIDE_LOCKON_ENABLED;
+}
+
 void PlaceHud(const GValue &root, Room room)
 {
+  ApplyLockOnDot(root);
   for (const Anchor &a : anchors)
     AtPath(root, a.path, [&](const GValue &clip) {
       Shift(clip, "x", a.sideX * room.x);

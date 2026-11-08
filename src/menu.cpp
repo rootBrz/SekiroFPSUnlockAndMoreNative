@@ -374,6 +374,7 @@ void BuildOptions()
   AddToggle(str::CamReset, str::CamResetHelp, DISABLE_CAMRESET_ENABLED, "DisableCamReset", ApplyCamResetPatch);
   AddToggle(str::CamAutorotate, str::CamAutorotateHelp, DISABLE_CAMERA_AUTOROTATE_ENABLED, "DisableCamAutorotate", ApplyCamAutorotatePatch);
   AddFov();
+  AddToggle(str::LockOnDot, str::LockOnDotHelp, HIDE_LOCKON_ENABLED, "HideLockOnDot", RelayoutHud);
 
   buildPage = PAGE_GRAPHICS;
   AddFpsLimit();

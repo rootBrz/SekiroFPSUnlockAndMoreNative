@@ -46,6 +46,7 @@ constexpr Setting defaultSettings[] = {
     {"AspectRatio", "0", &ASPECT_RATIO_MODE},
     {"StretchHud", "2", &HUD_LAYOUT},
     {"DisableCamReset", "0", &DISABLE_CAMRESET_ENABLED},
+    {"HideLockOnDot", "0", &HIDE_LOCKON_ENABLED},
     {"DisableCamAutorotate", "0", &DISABLE_CAMERA_AUTOROTATE_ENABLED},
     {"DisableDeathPenalties", "0", &DISABLE_DEATH_PENALTIES_ENABLED},
     {"DisableDragonrot", "0", &DISABLE_DRAGONROT_ENABLED},
