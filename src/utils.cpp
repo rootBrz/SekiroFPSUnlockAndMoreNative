@@ -50,6 +50,7 @@ constexpr Setting defaultSettings[] = {
     {"DisableCamAutorotate", "0", &DISABLE_CAMERA_AUTOROTATE_ENABLED},
     {"DisableDeathPenalties", "0", &DISABLE_DEATH_PENALTIES_ENABLED},
     {"DisableDragonrot", "0", &DISABLE_DRAGONROT_ENABLED},
+    {"QuitToDesktop", "0", &QUIT_TO_DESKTOP_ENABLED},
     {"SoundVolumeMusic", "-1", &SOUND_VOLUME_MUSIC},
     {"SoundVolumeEffects", "-1", &SOUND_VOLUME_EFFECTS},
     {"SoundVolumeVoice", "-1", &SOUND_VOLUME_VOICE}};

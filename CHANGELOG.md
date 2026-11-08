@@ -2,6 +2,10 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.9.0
+
+- New option **Quit Game to Desktop** in Game Options (off by default): Quit Game saves and then closes the game, instead of stopping at the title screen and its network connection. The game is closed as soon as the title screen comes up after the save.
+
 ## 1.8.1
 
 - New option Hide Lock-on Dot (Camera Options, off by default) hides the dot on the locked-on target.
