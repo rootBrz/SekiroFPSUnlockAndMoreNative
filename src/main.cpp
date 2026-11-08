@@ -4,6 +4,7 @@
 #include "menu.h"
 #include "offset.h"
 #include "patches.h"
+#include "quit.h"
 #include "sound.h"
 #include "utils.h"
 
@@ -142,6 +143,7 @@ DWORD WINAPI InitThread(LPVOID lpParam)
   is_game_in_loading_addr = GetAbsoluteAddress(is_game_in_loading_offset);
   ApplyBorderlessPatch();
   ApplyIntroPatch();
+  ApplyPressStartPatch();
   ApplyCamResetPatch();
   ApplyCamAutorotatePatch();
   ApplyDeathPenaltiesPatch();
@@ -151,6 +153,7 @@ DWORD WINAPI InitThread(LPVOID lpParam)
   ApplyFovPatch();
   INITIALIZED = true;
   InstallMenuHooks();
+  InstallQuitHooks();
 
   InitHooks();
   // the render targets were built before the hook, so a chosen ratio needs them built again

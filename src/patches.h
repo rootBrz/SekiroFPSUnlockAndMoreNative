@@ -5,6 +5,7 @@
 void ApplyFramelockPatch();
 void ApplyAutolootPatch();
 void ApplyIntroPatch();
+void ApplyPressStartPatch();
 void ApplyBorderlessPatch();
 void InstallWindowHooks();
 void ApplyFovPatch();

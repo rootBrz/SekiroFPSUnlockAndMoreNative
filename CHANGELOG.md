@@ -4,7 +4,8 @@ Each release needs a `## <version>` section here matching `VERSION`. The release
 
 ## 1.9.0
 
-- New option **Quit Game to Desktop** in Game Options (off by default): Quit Game saves and then closes the game, instead of stopping at the title screen and its network connection. The game is closed as soon as the title screen comes up after the save.
+- New choice **Quit Game to Desktop** in the confirmation of Quit Game (Yes, Quit Game to Desktop; B or Esc answers No): it saves and then closes the game as soon as the title screen comes up, instead of stopping at the title screen and its network connection.
+- New option **Skip Press Any Button** in Game Options (on by default) skips the title screen's fade-in, the "press any button" wait, the Information dialog and the notice that the game was not closed with Quit Game.
 
 ## 1.8.1
 

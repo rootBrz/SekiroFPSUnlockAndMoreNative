@@ -41,6 +41,7 @@ constexpr Setting defaultSettings[] = {
     {"ValueFOV", "0", &FOV_VALUE},
     {"EnableAutoloot", "1", &AUTOLOOT_ENABLED},
     {"EnableIntroSkip", "1", &INTROSKIP_ENABLED},
+    {"EnablePressStartSkip", "1", &PRESSSTART_SKIP_ENABLED},
     {"EnableBorderlessFullscreen", "1", &BORDERLESS_ENABLED},
     {"EnableWindowedHdr", "1", &WINDOWED_HDR_ENABLED},
     {"AspectRatio", "0", &ASPECT_RATIO_MODE},
@@ -50,7 +51,6 @@ constexpr Setting defaultSettings[] = {
     {"DisableCamAutorotate", "0", &DISABLE_CAMERA_AUTOROTATE_ENABLED},
     {"DisableDeathPenalties", "0", &DISABLE_DEATH_PENALTIES_ENABLED},
     {"DisableDragonrot", "0", &DISABLE_DRAGONROT_ENABLED},
-    {"QuitToDesktop", "0", &QUIT_TO_DESKTOP_ENABLED},
     {"SoundVolumeMusic", "-1", &SOUND_VOLUME_MUSIC},
     {"SoundVolumeEffects", "-1", &SOUND_VOLUME_EFFECTS},
     {"SoundVolumeVoice", "-1", &SOUND_VOLUME_VOICE}};

@@ -4,6 +4,7 @@
 #include "MinHook.h"
 #include "offset.h"
 #include "patches.h"
+#include "quit.h"
 #include "strings.h"
 #include "utils.h"
 
@@ -367,9 +368,9 @@ void BuildOptions()
   buildPage = PAGE_GAME;
   AddToggle(str::Autoloot, str::AutolootHelp, AUTOLOOT_ENABLED, "EnableAutoloot", ApplyAutolootPatch, 1);
   AddToggle(str::SkipLogos, str::SkipLogosHelp, INTROSKIP_ENABLED, "EnableIntroSkip", nullptr, 1);
+  AddToggle(str::PressStartSkip, str::PressStartSkipHelp, PRESSSTART_SKIP_ENABLED, "EnablePressStartSkip", ApplyPressStartPatch);
   AddToggle(str::DeathPenalties, str::DeathPenaltiesHelp, DISABLE_DEATH_PENALTIES_ENABLED, "DisableDeathPenalties", ApplyDeathPenaltiesPatch);
   AddToggle(str::Dragonrot, str::DragonrotHelp, DISABLE_DRAGONROT_ENABLED, "DisableDragonrot", ApplyDragonrotPatch);
-  AddToggle(str::QuitToDesktop, str::QuitToDesktopHelp, QUIT_TO_DESKTOP_ENABLED, "QuitToDesktop");
 
   buildPage = PAGE_CAMERA;
   AddToggle(str::CamReset, str::CamResetHelp, DISABLE_CAMRESET_ENABLED, "DisableCamReset", ApplyCamResetPatch);
@@ -432,6 +433,9 @@ void *DetourButton(void *page, void *textDef, void *a3, void *a4, void *a5)
 
 void *DetourText(void *holder, void *msg, unsigned id, const wchar_t *name)
 {
+  std::wstring label;
+  if (QuitDialogLabel(id, name, label))
+    return fnFormat(holder, L"%s", label.c_str());
   if (!msg && id >= (unsigned)TEXT_BASE && id < (unsigned)TEXT_BASE + texts.size())
   {
     const Text &text = texts[id - TEXT_BASE];

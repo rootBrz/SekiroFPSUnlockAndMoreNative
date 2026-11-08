@@ -42,6 +42,23 @@ inline const Text SkipLogosHelp = {L"Skips the start-up logos. Takes effect afte
                                    L"跳過啟動時的標誌畫面。重新啟動遊戲後生效。",
                                    L"ข้ามโลโก้ตอนเริ่มเกม มีผลหลังจากรีสตาร์ทเกม"};
 
+inline const Text PressStartSkip = {L"Skip Press Any Button", L"Passer « Appuyez sur une touche »", L"Salta \"Premi un tasto\"", L"\"Beliebige Taste\" überspringen",
+                                    L"Omitir \"Pulsa un botón\"", L"Pular \"Pressione um botão\"", L"Pomiń \"Naciśnij dowolny przycisk\"", L"Пропуск «Нажмите любую кнопку»",
+                                    L"「ボタンを押してください」をスキップ", L"\"아무 버튼이나 누르세요\" 건너뛰기", L"跳过“按任意键”", L"跳過「按任意鍵」", L"ข้ามหน้ากดปุ่มใดก็ได้"};
+inline const Text PressStartSkipHelp = {L"Goes from the title screen straight to the main menu without waiting for a button press.",
+                                        L"Passe de l'écran titre directement au menu principal sans attendre l'appui sur une touche.",
+                                        L"Passa dalla schermata del titolo direttamente al menu principale senza attendere la pressione di un tasto.",
+                                        L"Wechselt vom Titelbildschirm direkt ins Hauptmenü, ohne auf einen Tastendruck zu warten.",
+                                        L"Pasa de la pantalla de título directamente al menú principal sin esperar a que se pulse un botón.",
+                                        L"Vai da tela de título direto para o menu principal sem esperar o pressionar de um botão.",
+                                        L"Przechodzi z ekranu tytułowego prosto do menu głównego bez czekania na naciśnięcie przycisku.",
+                                        L"Переходит с титульного экрана сразу в главное меню, не дожидаясь нажатия кнопки.",
+                                        L"ボタンを押さずに、タイトル画面からそのままメインメニューへ進みます。",
+                                        L"버튼을 누르지 않아도 타이틀 화면에서 바로 메인 메뉴로 넘어갑니다.",
+                                        L"无需按键，直接从标题画面进入主菜单。",
+                                        L"無需按鍵，直接從標題畫面進入主選單。",
+                                        L"ข้ามจากหน้าไตเติ้ลไปยังเมนูหลักทันทีโดยไม่ต้องรอกดปุ่ม"};
+
 inline const Text DeathPenalties = {L"Disable Death Penalties", L"Désactiver les pénalités de mort", L"Disattiva penalità di morte", L"Todesstrafen deaktivieren",
                                     L"Desactivar penalizaciones por muerte", L"Desativar penalidades de morte", L"Wyłącz kary za śmierć", L"Отключить штрафы за смерть",
                                     L"死亡ペナルティを無効化", L"사망 페널티 끄기", L"禁用死亡惩罚", L"停用死亡懲罰", L"ปิดบทลงโทษเมื่อตาย"};
@@ -79,20 +96,6 @@ inline const Text DragonrotHelp = {L"Dragonrot no longer spreads to NPCs.",
 inline const Text QuitToDesktop = {L"Quit Game to Desktop", L"Quitter vers le bureau", L"Esci al desktop", L"Zum Desktop beenden",
                                    L"Salir al escritorio", L"Sair para a área de trabalho", L"Wyjdź na pulpit", L"Выход на рабочий стол",
                                    L"デスクトップに終了", L"바탕화면으로 종료", L"退出到桌面", L"退出至桌面", L"ออกเกมไปที่เดสก์ท็อป"};
-inline const Text QuitToDesktopHelp = {L"Quit Game saves and then closes the game instead of staying at the title screen.",
-                                       L"Quitter le jeu sauvegarde puis ferme le jeu au lieu de rester sur l'écran titre.",
-                                       L"Esci dal gioco salva e poi chiude il gioco invece di restare nella schermata del titolo.",
-                                       L"Spiel beenden speichert und schließt dann das Spiel, statt im Titelbildschirm zu bleiben.",
-                                       L"Salir del juego guarda y después cierra el juego en lugar de quedarse en la pantalla de título.",
-                                       L"Sair do jogo salva e depois fecha o jogo em vez de ficar na tela de título.",
-                                       L"Wyjście z gry zapisuje, a potem zamyka grę zamiast zostawać na ekranie tytułowym.",
-                                       L"Выход из игры сохраняет и закрывает игру, а не оставляет её на титульном экране.",
-                                       L"ゲーム終了でセーブした後、タイトル画面に留まらずにゲームを閉じます。",
-                                       L"게임 종료 시 저장한 뒤 타이틀 화면에 머무르지 않고 게임을 닫습니다.",
-                                       L"退出游戏时保存后直接关闭游戏，不停留在标题画面。",
-                                       L"結束遊戲時存檔後直接關閉遊戲，不停留在標題畫面。",
-                                       L"เมื่อเลือกออกจากเกม เกมจะเซฟแล้วปิดทันทีโดยไม่ค้างอยู่ที่หน้าไตเติ้ล"};
-
 inline const Text CamReset = {L"Disable Camera Reset", L"Désactiver la réinitialisation de la caméra", L"Disattiva reimpostazione telecamera",
                               L"Kamera-Zurücksetzen deaktivieren", L"Desactivar reinicio de cámara", L"Desativar redefinição da câmera", L"Wyłącz resetowanie kamery",
                               L"Отключить сброс камеры", L"カメラリセットを無効化", L"카메라 초기화 끄기", L"禁用镜头重置", L"停用鏡頭重置", L"ปิดการรีเซ็ตกล้อง"};

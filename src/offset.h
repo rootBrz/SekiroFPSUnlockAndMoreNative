@@ -6,6 +6,11 @@ constexpr uintptr_t fps_offset = 0x11AB550;
 constexpr uintptr_t speedfix_offset = 0x7DE8AD;
 constexpr uintptr_t autoloot_offset = 0x91C606;
 constexpr uintptr_t introskip_offset = 0xE1B51B;     // credits to 'Katalash' for original offset
+constexpr uintptr_t pressstart_fadein_offset = 0xD2A89C;  // jz in TitleTopDialog::update: not fading in -> skip the fade-in wait; made a jmp
+constexpr uintptr_t titleinfo_offset1 = 0xD25771;         // jz over the title information dialog when the notice text is empty; made a jmp
+constexpr uintptr_t titleinfo_offset2 = 0xD26FA1;         // same, second copy of that job
+constexpr uintptr_t titleinfo_offset3 = 0xE00DAE;         // short jz over the title information dialog when its text is empty; made a jmp
+constexpr uintptr_t pressstart_offset = 0xD5AFA0;    // stub "xor al,al; ret" that the title screen (TitleTopDialog::update) ORs into its "button pressed" check
 constexpr uintptr_t fovsetting_offset = 0x73c688;    // credits to 'jackfuste' for original offset
 
 constexpr uintptr_t resolution_pointer_offset = 0x1194d85;

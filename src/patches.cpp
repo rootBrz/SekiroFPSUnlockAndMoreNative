@@ -104,6 +104,24 @@ void ApplyIntroPatch()
   WriteProtectedMemory(GetAbsoluteAddress(introskip_offset), patchEnable, sizeof(char), "Patch logos skip");
 }
 
+// Title screen: the press check is always true, the fade-in is not waited for and the title information dialog is never shown, so
+// the game goes from the logos straight to the menu. "jz rel32" (0F 84) becomes "nop; jmp rel32" (90 E9) with the same target.
+void ApplyPressStartPatch()
+{
+  if (!PRESSSTART_SKIP_ENABLED && !INITIALIZED)
+    return;
+
+  constexpr uint8_t press[2][3] = {{0x32, 0xC0, 0xC3}, {0xB0, 0x01, 0xC3}}; // xor al,al; ret / mov al,1; ret
+  constexpr uint8_t jump[2][2] = {{0x0F, 0x84}, {0x90, 0xE9}};
+  bool on = PRESSSTART_SKIP_ENABLED;
+
+  WriteProtectedMemory(GetAbsoluteAddress(pressstart_offset), press[on], sizeof(press[on]), "Patch press any button skip");
+  for (uintptr_t offset : {pressstart_fadein_offset, titleinfo_offset1, titleinfo_offset2})
+    WriteProtectedMemory(GetAbsoluteAddress(offset), jump[on], sizeof(jump[on]), "Patch title screen skip");
+  const uint8_t shortJump[2] = {0x74, 0xEB}; // jz rel8 / jmp rel8
+  WriteProtectedMemory(GetAbsoluteAddress(titleinfo_offset3), &shortJump[on], 1, "Patch title information skip");
+}
+
 // Borderless windowed: the window always covers the screen while the game keeps rendering at the selected
 // resolution. The game derives its render size from the window's client rect and sizes the window to the
 // selected resolution itself, so its SetWindowPos size is remembered and GetClientRect reports it.

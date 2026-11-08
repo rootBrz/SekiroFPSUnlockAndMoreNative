@@ -18,7 +18,7 @@ All settings are in the game's **Settings** menu (main menu and pause menu) and 
 
 | Page             | Options                                                                                          |
 | ---------------- | ------------------------------------------------------------------------------------------------ |
-| Game Options     | Autoloot, Skip Logos (restart), Disable Death Penalties, Disable Dragonrot, Quit Game to Desktop |
+| Game Options     | Autoloot, Skip Logos (restart), Skip Press Any Button, Disable Death Penalties, Disable Dragonrot |
 | Camera Options   | Disable Camera Reset, Disable Camera Autorotate, Field of View, Hide Lock-on Dot                 |
 | Graphics Options | FPS Limit (unlock), VSync, Aspect Ratio, HUD Layout                                              |
 
@@ -28,7 +28,8 @@ All settings are in the game's **Settings** menu (main menu and pause menu) and 
 - **Aspect Ratio** letterboxes the picture to 4:3, 16:10, 16:9 or 21:9, or fills the screen.
 - **HUD Layout** fits the HUD to a picture that is not 16:9. **Screen Edges** (default) moves its elements to the edges of the picture: the health, the boss bars and the counters to the sides on wider pictures and to the top and bottom on narrower ones, with the posture bars kept in the centre. **Stretch** stretches the HUD over the whole screen. **16:9** keeps it at 16:9. The vignettes and awareness markers are fixed for wider and narrower pictures, and the black screen, the fades and the black background of the loading screens always cover the whole picture.
 - The game starts with your sound volumes instead of its defaults, which it would otherwise use until the save is loaded (the logos and the title played loud). The volumes are remembered in the INI (`SoundVolume*`) whenever they change; the first start after installing still plays at the defaults.
-- **Quit Game to Desktop** (off by default) closes the game after **Quit Game** instead of leaving it at the title screen, so there is no second Quit Game at the title and no wait for the network connection there. The game saves as usual and goes back to the title screen; the mod closes the window (like Alt+F4) as soon as the title screen comes up, once the save is done. With the option on, any return to the title screen closes the game, not only Quit Game; to stay at the title screen (e.g. to change the save), turn the option off first. The INI key is `QuitToDesktop`.
+- **Quit Game to Desktop** is a third choice in the confirmation of the pause menu's **Quit Game** (Yes, Quit Game to Desktop; B or Esc answers No). It saves like Yes and goes back to the title screen; the mod closes the window (like Alt+F4) as soon as the title screen comes up, once the save is done, so there is no second Quit Game at the title and no wait for the network connection there.
+- **Skip Press Any Button** (on by default) goes from the logos to the main menu without waiting for the title screen or a button press, without the Information dialog and without the notice at the start that the game was not closed with Quit Game (e.g. after Alt+F4). It takes effect at once. The INI key is `EnablePressStartSkip`.
 - The frame rate is unlocked up to 300 fps, with the game's speed fixes (running speed, sprint speed) applied. The frame rate is also unlocked on loading screens.
 
 ## Build
@@ -59,6 +60,7 @@ GPLv3, see `LICENSE`.
 - Lyall - for SekiroFix (<https://codeberg.org/Lyall/SekiroFix>, MIT): animation culling fix for wider aspect ratios, sprint speed fix above 60 fps, fullscreen 60 hz startup patches, and the idea of an unrestricted resolution list.
 - MDAWec - for sound fix, translations, refresh rate change and hud screen edges mod.
 - Uberhalit - for SekiroFpsUnlockAndMore.
+- arsura - for the Quit Game to Desktop idea and the first version of it.
 - Katalash - for logos skip offset from Sekiro Mod Engine.
 - Thevayl - inspiration for FPS unlock during loading screens.
 - Cielos - for some camera adjustment offsets.
