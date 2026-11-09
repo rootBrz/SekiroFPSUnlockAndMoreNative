@@ -2,6 +2,10 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.9.2
+
+- Fixed the dimming behind conversations (and the other backdrops of movies that stay loaded) not following a change of HUD Layout or Aspect Ratio made while playing; it stayed at the size of the layout the game started with.
+
 ## 1.9.1
 
 - Fixed the dimming behind the event texts (Sculptor's Idol Found, Shinobi Execution, Dragonrot, ...): it now fills the whole picture on every aspect ratio, also when the picture is taller than 16:9 (16:10, 4:3).

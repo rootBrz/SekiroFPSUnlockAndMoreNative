@@ -139,28 +139,6 @@ struct Room
   double x = 0, y = 0;
 };
 
-// a Room one thread writes and another reads without a lock: its two numbers as floats in one atomic word
-class SharedRoom
-{
-  std::atomic<uint64_t> bits{0};
-
-public:
-  void Set(Room room)
-  {
-    float numbers[2] = {(float)room.x, (float)room.y};
-    uint64_t packed;
-    memcpy(&packed, numbers, sizeof(packed));
-    bits = packed;
-  }
-  Room Get() const
-  {
-    uint64_t packed = bits;
-    float numbers[2];
-    memcpy(numbers, &packed, sizeof(numbers));
-    return {numbers[0], numbers[1]};
-  }
-};
-
 Room EdgeRoom(float width, float height)
 {
   Room room;
@@ -383,8 +361,6 @@ bool StretchFilling(const GValue &clip, const GValue &root, Room room, Fill fill
   bool turned = quarters & 1;
   auto stretchAxis = [&](const char *position, const char *scale, double at, double start, double extent, double stageExtent, double before,
                          double after, bool forward) {
-    if (before + after <= 0)
-      return;
     double baseScale = Unshifted(clip, scale);
     if (baseScale == 0)
       return;
@@ -474,9 +450,27 @@ constexpr size_t JOB_COUNT = sizeof(jobs) / sizeof(jobs[0]);
 std::atomic<bool> jobPending[JOB_COUNT];
 std::atomic<int> pendingJobs;
 
-SharedRoom jobRoom[JOB_COUNT];
-SharedRoom hudBackdropRoom;                // the room of the HUD's backdrops, whatever the layout of the HUD itself
+std::atomic<bool> viewed[JOB_COUNT];       // the movie got a viewport: it exists or did
 std::atomic<void *> textEffectClip;        // the clip of TextEffect (Sculptor's Idol Found, ...) that was played
+
+// The room beyond the 16:9 stage that the backdrops of a movie are stretched over, from the render size and the HUD
+// layout as they are now: a movie that lives on keeps nothing from the layout it was made in.
+Room JobRoom(size_t job)
+{
+  // the HUD and the save icon stay on the stage unless the layout is Screen Edges; the backgrounds stretch over the room
+  // in every layout but Stretch, which stretches the whole movie
+  const uint32_t *size = (const uint32_t *)GetAbsoluteAddress(render_resolution_offset);
+  bool background = jobs[job].job != JOB_HUD && jobs[job].job != JOB_SAVE_ICON;
+  bool edges = background ? HUD_LAYOUT != HUD_STRETCH : HUD_LAYOUT == HUD_EDGES;
+  return edges ? EdgeRoom((float)size[0], (float)size[1]) : Room();
+}
+
+// the same for the backdrops of the HUD movie (the event texts), whatever the layout of the HUD itself
+Room HudBackdropRoom()
+{
+  const uint32_t *size = (const uint32_t *)GetAbsoluteAddress(render_resolution_offset);
+  return HUD_LAYOUT != HUD_STRETCH ? EdgeRoom((float)size[0], (float)size[1]) : Room();
+}
 
 // Some clips come with the timeline of a movie after its job has run: the dimming of an event text, the dark side of the
 // shop menu. A job that waits for its clips is asked for again after each clip the engine places on a timeline
@@ -537,7 +531,7 @@ void StretchTextEffect(const GValue &root)
 {
   if (waiting[hudJob] <= 0)
     return;
-  Room room = hudBackdropRoom.Get();
+  Room room = HudBackdropRoom();
   AtPath(root, "TextEffect", [&](const GValue &texts) {
     ForEachChild(texts, [&](const GValue &text) {
       if (text.data == textEffectClip && StretchBackdrops(text, root, room, false, 2))
@@ -617,7 +611,7 @@ void PlaceFrom(void *oi, void *data)
     if (i >= 0 && jobPending[i] && jobPending[i].exchange(false))
     {
       pendingJobs--;
-      RunJob(i, root, jobRoom[i].Get());
+      RunJob(i, root, JobRoom(i));
     }
   }
   Release(root);
@@ -631,6 +625,7 @@ GotoLabelFn fnGotoLabel;
 bool DetourGotoLabel(void *oi, void *data, const char *label, bool stop)
 {
   bool r = fnGotoLabel(oi, data, label, stop);
+  PlaceFrom(oi, data); // a movie that is only played (the conversation) is not called into otherwise
   GValue clip, parent, name, parentName;
   clip.oi = (void ***)oi;
   clip.type = VT_DISPLAY_OBJECT; // borrowed from the call, not managed
@@ -696,7 +691,7 @@ void DetourDeathUpdate(uint8_t *menu)
   void ***wrapper = (void ***)(menu + 0x158);
   if (!fnGetMember || !*wrapper)
     return;
-  Room room = jobRoom[deathJob].Get();
+  Room room = JobRoom(deathJob);
   bool stretch = room.x != 0 || room.y != 0;
   if (!stretch && !deathStretched)
     return;
@@ -760,25 +755,25 @@ void InstallHudLayout()
     LogMessage(LogLevel::Error, false, "Scaleform timeline hook failed, the event text dimming (Sculptor's Idol Found) stays at 16:9");
 }
 
-void MovieViewport(const char *name, float width, float height)
+void MovieViewport(const char *name)
 {
   forgetRoots = true;
   for (size_t i = 0; i < JOB_COUNT; i++)
     if (strstr(name, jobs[i].movie))
     {
-      // the HUD and the save icon stay on the stage unless the layout is Screen Edges; the backgrounds stretch over
-      // the room in every layout but Stretch, which stretches the whole movie
-      bool background = jobs[i].job != JOB_HUD && jobs[i].job != JOB_SAVE_ICON;
-      bool edges = background ? HUD_LAYOUT != HUD_STRETCH : HUD_LAYOUT == HUD_EDGES;
-      jobRoom[i].Set(edges ? EdgeRoom(width, height) : Room());
+      viewed[i] = true;
       if (jobs[i].job == JOB_HUD)
-      {
-        hudBackdropRoom.Set(HUD_LAYOUT != HUD_STRETCH ? EdgeRoom(width, height) : Room());
         hudPlaceDue = true;
-      }
       if (jobs[i].job == JOB_PANELS)
         WaitForClips(i);
       if (!jobPending[i].exchange(true))
         pendingJobs++;
     }
+}
+
+void RefreshHudJobs()
+{
+  for (size_t i = 0; i < JOB_COUNT; i++)
+    if (viewed[i] && jobs[i].job != JOB_HUD && !jobPending[i].exchange(true))
+      pendingJobs++;
 }

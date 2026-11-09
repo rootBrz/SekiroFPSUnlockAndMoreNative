@@ -120,7 +120,7 @@ void HudViewport(Ctx *ctx)
     else if (differs)
       LogMessage(LogLevel::Info, false, "HUD relayout skipped, empty size.");
   }
-  MovieViewport(name, ctx->xmm[5][0], ctx->xmm[7][0]);
+  MovieViewport(name);
   QuitToDesktopViewport(name, isHud);
 
   if (strstr(name, "01_910_fade.gfx") || strstr(name, "01_900_black.gfx") || strstr(name, "01_200_dyingeffect.gfx") ||
@@ -192,6 +192,7 @@ uint64_t DetourManagerUpdate(uint8_t *manager, void *a2, void *a3, void *a4)
           fnPlayerViewport(player, rect);
         }
     }
+    RefreshHudJobs(); // the movies that got no viewport
   }
   return fnManagerUpdate(manager, a2, a3, a4);
 }
