@@ -139,6 +139,28 @@ struct Room
   double x = 0, y = 0;
 };
 
+// a Room one thread writes and another reads without a lock: its two numbers as floats in one atomic word
+class SharedRoom
+{
+  std::atomic<uint64_t> bits{0};
+
+public:
+  void Set(Room room)
+  {
+    float numbers[2] = {(float)room.x, (float)room.y};
+    uint64_t packed;
+    memcpy(&packed, numbers, sizeof(packed));
+    bits = packed;
+  }
+  Room Get() const
+  {
+    uint64_t packed = bits;
+    float numbers[2];
+    memcpy(numbers, &packed, sizeof(numbers));
+    return {numbers[0], numbers[1]};
+  }
+};
+
 Room EdgeRoom(float width, float height)
 {
   Room room;
@@ -277,59 +299,130 @@ bool Bounds(const GValue &clip, const GValue *space, double &left, double &top, 
   return ok;
 }
 
-// whether a clip covers the stage: a clip stretched before did; otherwise its bounds on the stage tell
-bool Covers(const GValue &clip, const GValue &root)
+// What a clip fills of the stage: all of it (a backdrop), its whole width (a band, e.g. the dimming behind a conversation
+// at the bottom) or its whole height (a panel, e.g. the dark side of a shop menu).
+enum class Fill
 {
-  double left, top, width, height;
-  return placed.count(std::make_pair(clip.data, std::string("width"))) ||
-         (Bounds(clip, &root, left, top, width, height) && left <= 20 && top <= 20 && left + width >= 1900 && top + height >= 1060);
+  Stage,
+  Band,
+  Panel,
+};
+
+// the turn of a clip on the stage, in degrees: its rotation and that of the clips around it
+double Turn(const GValue &clip)
+{
+  double turn = Number(clip, "rotation");
+  GValue parents[2];
+  const GValue *at = &clip;
+  for (int i = 0; i < 16; i++)
+  {
+    GValue &parent = parents[i & 1];
+    Release(parent);
+    if (!GetMember(*at, "parent", parent) || !IsDisplayObject(parent))
+      break;
+    turn += Number(parent, "rotation");
+    at = &parent;
+  }
+  Release(parents[0]);
+  Release(parents[1]);
+  return turn;
 }
 
-// A backdrop (a clip that covers the stage) is stretched to cover the room on each side too: scaled by its width plus
-// twice the room, with its registration point moved so that its left edge goes out by the room. Its size and the
-// place of its registration point are taken back to what the movie set, from the stretch applied before.
-// Only the innermost clips that cover the stage are stretched: a clip whose position or size is set by script is no
+// the quarter turns (clockwise) of a clip on the stage, -1 when it is turned by any other angle
+int Quarters(const GValue &clip)
+{
+  double quarters = Turn(clip) / 90;
+  double whole = round(quarters);
+  return fabs(quarters - whole) < 0.02 ? ((int)whole % 4 + 4) % 4 : -1;
+}
+
+// whether a clip fills the stage: a clip stretched before did; otherwise its bounds on the stage tell. A clip turned a
+// quarter (a gradient drawn sideways) is scaled across the stage by its scaleY and down it by its scaleX.
+bool Fills(const GValue &clip, const GValue &root, Fill fill)
+{
+  auto stretched = [&](const char *property) { return placed.count(std::make_pair(clip.data, std::string(property))) != 0; };
+  bool wide = fill != Fill::Panel, tall = fill != Fill::Band;
+  if (stretched("scaleX") || stretched("scaleY"))
+  {
+    int quarters = Quarters(clip);
+    bool turned = quarters > 0 && (quarters & 1);
+    if ((!wide || stretched(turned ? "scaleY" : "scaleX")) && (!tall || stretched(turned ? "scaleX" : "scaleY")))
+      return true;
+  }
+  double left, top, width, height;
+  return Bounds(clip, &root, left, top, width, height) && (!wide || (left <= 20 && left + width >= 1900)) &&
+         (!tall || (top <= 20 && top + height >= 1060));
+}
+
+// A clip that fills the stage is stretched to fill the room beyond the stage too, on each side it touches: scaled by
+// the room, with its registration point moved so that the edge that touches goes out by the room. A backdrop touches all
+// four sides, a band the two ends of its width and one side, a panel the two ends of its height and one side. Its size
+// and the place of its registration point are taken back to what the movie set, from the stretch applied before.
+// Only the innermost clips that fill the stage are stretched: a clip whose position or size is set by script is no
 // longer animated by its timeline, alpha included, and the vignettes of the death screen (Begin, Loop, WaitEnd) fade
 // in by the alpha of the clip around the picture.
-bool StretchCovering(const GValue &clip, const GValue &root, Room room)
+// The clip is scaled and placed in the units of its parent, which can be turned a quarter and scaled on the stage (the
+// gradient of the shop menu is): each of its axes is matched with the stage axis it runs along, and the room is turned
+// into its units by the size of the clip on the stage over its size in the parent.
+bool StretchFilling(const GValue &clip, const GValue &root, Room room, Fill fill)
 {
-  if (!Covers(clip, root))
+  if (!Fills(clip, root, fill))
     return false;
   bool inner = false;
-  ForEachChild(clip, [&](const GValue &child) { inner |= StretchCovering(child, root, room); });
+  ForEachChild(clip, [&](const GValue &child) { inner |= StretchFilling(child, root, room, fill); });
   if (inner)
     return true;
-  double left, top, width, height;
-  if (!Bounds(clip, nullptr, left, top, width, height) || width <= 0 || height <= 0)
+  int quarters = Quarters(clip);
+  double left, top, width, height, stageLeft, stageTop, stageWidth, stageHeight;
+  if (quarters < 0 || !Bounds(clip, nullptr, left, top, width, height) || width <= 0 || height <= 0 ||
+      !Bounds(clip, &root, stageLeft, stageTop, stageWidth, stageHeight))
     return false;
-  double x = Number(clip, "x"), y = Number(clip, "y");
-  double baseWidth = Unshifted(clip, "width"), baseHeight = Unshifted(clip, "height");
-  double scaleX = baseWidth > 0 ? Number(clip, "width") / baseWidth : 1, scaleY = baseHeight > 0 ? Number(clip, "height") / baseHeight : 1;
-  // the registration point from the left and top edges, and the size, as the movie set them
-  double fromLeft = (x - left) / scaleX, fromTop = (y - top) / scaleY;
-  width /= scaleX, height /= scaleY;
-  Shift(clip, "x", fromLeft * 2 * room.x / width - room.x);
-  Shift(clip, "y", fromTop * 2 * room.y / height - room.y);
-  Shift(clip, "width", 2 * room.x);
-  Shift(clip, "height", 2 * room.y);
+  // what each side of the stage gets: the room, if the clip touches it
+  double beforeX = stageLeft <= 20 ? room.x : 0, afterX = stageLeft + stageWidth >= 1900 ? room.x : 0;
+  double beforeY = stageTop <= 20 ? room.y : 0, afterY = stageTop + stageHeight >= 1060 ? room.y : 0;
+  bool turned = quarters & 1;
+  auto stretchAxis = [&](const char *position, const char *scale, double at, double start, double extent, double stageExtent, double before,
+                         double after, bool forward) {
+    if (before + after <= 0)
+      return;
+    double baseScale = Unshifted(clip, scale);
+    if (baseScale == 0)
+      return;
+    double ratio = Number(clip, scale) / baseScale; // what the stretch applied before made of it
+    double unit = stageExtent / extent;             // stage units in a unit of the parent
+    double startOut = (forward ? before : after) / unit, grow = (before + after) / unit;
+    extent /= ratio;
+    Shift(clip, position, (at - start) / ratio * grow / extent - startOut);
+    Shift(clip, scale, baseScale * grow / extent);
+  };
+  // the clip's x axis runs down the stage when turned, to the right (down) after 0 (1) quarters, else the other way
+  stretchAxis("x", "scaleX", Number(clip, "x"), left, width, turned ? stageHeight : stageWidth, turned ? beforeY : beforeX, turned ? afterY : afterX,
+              quarters <= 1);
+  stretchAxis("y", "scaleY", Number(clip, "y"), top, height, turned ? stageWidth : stageHeight, turned ? beforeX : beforeY, turned ? afterX : afterY,
+              quarters == 0 || quarters == 3);
   return true;
 }
 
-// The backdrops of a movie: the clips of its root that cover the stage, only unnamed ones (e.g. the semi-transparent
+// The backdrops of a movie: the clips of its root that fill the stage, only unnamed ones (e.g. the semi-transparent
 // black behind the idol menu), or any down to depth levels below the root (the death screen, whose backgrounds come
-// with its timeline).
-void StretchBackdrops(const GValue &obj, const GValue &root, Room room, bool anyName, int depth)
+// with its timeline). Returns whether there are any.
+bool StretchBackdrops(const GValue &obj, const GValue &root, Room room, bool anyName, int depth, Fill fill = Fill::Stage)
 {
+  bool found = false;
   ForEachChild(obj, [&](const GValue &clip) {
     GValue name;
     std::string n = GetMember(clip, "name", name) ? String(name) : "";
     Release(name);
-    if ((anyName || n.rfind("instance", 0) == 0) && StretchCovering(clip, root, room))
-      return;
-    if (depth > 1)
-      StretchBackdrops(clip, root, room, anyName, depth - 1);
+    if ((anyName || n.rfind("instance", 0) == 0) && StretchFilling(clip, root, room, fill))
+      found = true;
+    else if (depth > 1)
+      found |= StretchBackdrops(clip, root, room, anyName, depth - 1, fill);
   });
+  return found;
 }
+
+size_t hudJob;
+std::atomic<bool> hudPlaceDue;
 
 // What is done to a movie after Scaleform recomputed its layout, during the game's next call into it.
 enum Job
@@ -339,6 +432,9 @@ enum Job
   JOB_LOADING,
   JOB_DEATH,
   JOB_BACKDROPS,
+  JOB_BANDS,
+  JOB_NOTICES,
+  JOB_PANELS,
 };
 struct MovieJob
 {
@@ -346,6 +442,8 @@ struct MovieJob
   Job job;
 };
 constexpr MovieJob jobs[] = {
+    {"01_061_talk.gfx", JOB_BANDS}, // the dimming behind a conversation, a band at the bottom
+    {"03_200_shoptop.gfx", JOB_PANELS}, // the dark side of the shop menu, a panel at the left
     {"01_000_fe.gfx", JOB_HUD},
     {"01_002_fe_saveicon.gfx", JOB_SAVE_ICON},
     {"02_903_nowloading2.gfx", JOB_LOADING},
@@ -356,11 +454,11 @@ constexpr MovieJob jobs[] = {
     // the semi-transparent black behind the idol menu and the notifications (an item, a skill, an event such as
     // Dragonrot spreading, messages and tutorials)
     {"03_202_bonfire.gfx", JOB_BACKDROPS},
-    {"02_280_getitem.gfx", JOB_BACKDROPS},
-    {"02_281_getitem_middle.gfx", JOB_BACKDROPS},
-    {"02_282_getitem_high.gfx", JOB_BACKDROPS},
-    {"02_283_getitem_skill.gfx", JOB_BACKDROPS},
-    {"02_284_getitem_event.gfx", JOB_BACKDROPS},
+    {"02_280_getitem.gfx", JOB_NOTICES},
+    {"02_281_getitem_middle.gfx", JOB_NOTICES},
+    {"02_282_getitem_high.gfx", JOB_NOTICES},
+    {"02_283_getitem_skill.gfx", JOB_NOTICES},
+    {"02_284_getitem_event.gfx", JOB_NOTICES},
     {"02_210_fullscreenmsgdialog.gfx", JOB_BACKDROPS},
     {"01_010_messagebox.gfx", JOB_BACKDROPS},
     {"01_011_messagebox_small.gfx", JOB_BACKDROPS},
@@ -373,29 +471,119 @@ constexpr MovieJob jobs[] = {
     {"01_035_bloodmessage_readlist.gfx", JOB_BACKDROPS},
 };
 constexpr size_t JOB_COUNT = sizeof(jobs) / sizeof(jobs[0]);
-Room jobRoom[JOB_COUNT];
 std::atomic<bool> jobPending[JOB_COUNT];
 std::atomic<int> pendingJobs;
+
+SharedRoom jobRoom[JOB_COUNT];
+SharedRoom hudBackdropRoom;                // the room of the HUD's backdrops, whatever the layout of the HUD itself
+std::atomic<void *> textEffectClip;        // the clip of TextEffect (Sculptor's Idol Found, ...) that was played
+
+// Some clips come with the timeline of a movie after its job has run: the dimming of an event text, the dark side of the
+// shop menu. A job that waits for its clips is asked for again after each clip the engine places on a timeline
+// (Sprite::AddDisplayObject), every ASK_EVERY-th one (they come thousands a second), until it finds them or its budget of
+// asks is spent.
+constexpr int WAIT_BUDGET = 2000;
+constexpr unsigned ASK_EVERY = 64;
+std::atomic<int> waiting[JOB_COUNT];
+std::atomic<int> waitingJobs;
+
+void WaitForClips(size_t job)
+{
+  if (waiting[job].exchange(WAIT_BUDGET) <= 0)
+    waitingJobs++;
+}
+
+// a request for a job that nobody answers (its movie is gone) must not stay: pending jobs make every call into a movie
+// look for its root
+void DropRequest(size_t job)
+{
+  if (jobPending[job].exchange(false))
+    pendingJobs--;
+}
+
+void ClipsFound(size_t job)
+{
+  if (waiting[job].exchange(0) > 0)
+  {
+    waitingJobs--;
+    DropRequest(job); // a request that came in while the job ran
+  }
+}
+
+void AskWaitingJobs()
+{
+  for (size_t i = 0; i < JOB_COUNT; i++)
+  {
+    int left = waiting[i];
+    if (left <= 0 || !waiting[i].compare_exchange_strong(left, left - 1))
+      continue;
+    if (left > 1)
+    {
+      if (!jobPending[i].exchange(true))
+        pendingJobs++;
+    }
+    else
+    {
+      waitingJobs--; // the budget is spent
+      DropRequest(i);
+    }
+  }
+}
 std::map<void *, int> rootJobs; // movie root -> its job (-1 none); forgotten when a movie gets a viewport
 std::atomic<bool> forgetRoots;
 
-void RunJob(Job job, const GValue &root, Room room)
+// the dimming of the event text that was played, once its clip is there
+void StretchTextEffect(const GValue &root)
 {
-  LogMessage(LogLevel::Info, false, "HUD job %d, room %.1f,%.1f.", (int)job, room.x, room.y);
+  if (waiting[hudJob] <= 0)
+    return;
+  Room room = hudBackdropRoom.Get();
+  AtPath(root, "TextEffect", [&](const GValue &texts) {
+    ForEachChild(texts, [&](const GValue &text) {
+      if (text.data == textEffectClip && StretchBackdrops(text, root, room, false, 2))
+        ClipsFound(hudJob);
+    });
+  });
+}
+
+void RunJob(size_t index, const GValue &root, Room room)
+{
+  Job job = jobs[index].job;
+  bool placeHud = job == JOB_HUD && hudPlaceDue.exchange(false);
+  if (job != JOB_HUD || placeHud) // the HUD job also runs for the event texts, many times
+    LogMessage(LogLevel::Info, false, "HUD job %d, room %.1f,%.1f.", (int)job, room.x, room.y);
   if (placed.size() > 4000) // clips of movies that are gone
     placed.clear();
   switch (job)
   {
   case JOB_HUD:
-    return PlaceHud(root, room);
+    if (placeHud)
+      PlaceHud(root, room);
+    StretchTextEffect(root);
+    break;
   case JOB_SAVE_ICON:
-    return AnchorChildren(root, room);
+    AnchorChildren(root, room);
+    break;
   case JOB_LOADING:
-    return StretchBackground(root, "instance1", room);
+    StretchBackground(root, "instance1", room);
+    break;
   case JOB_DEATH:
-    return StretchBackdrops(root, root, room, true, 3);
+    StretchBackdrops(root, root, room, true, 3);
+    break;
   case JOB_BACKDROPS:
-    return StretchBackdrops(root, root, room, false, 1);
+    StretchBackdrops(root, root, room, false, 1);
+    break;
+  case JOB_BANDS:
+    StretchBackdrops(root, root, room, false, 4, Fill::Band);
+    break;
+  case JOB_PANELS:
+    if (StretchBackdrops(root, root, room, true, 3, Fill::Panel))
+      ClipsFound(index);
+    break;
+  case JOB_NOTICES: // a notification: the dimming of the stage and the bands across it
+    StretchBackdrops(root, root, room, false, 1);
+    StretchBackdrops(root, root, room, false, 4, Fill::Band);
+    break;
   }
 }
 
@@ -429,11 +617,47 @@ void PlaceFrom(void *oi, void *data)
     if (i >= 0 && jobPending[i] && jobPending[i].exchange(false))
     {
       pendingJobs--;
-      RunJob(jobs[i].job, root, jobRoom[i]);
+      RunJob(i, root, jobRoom[i].Get());
     }
   }
   Release(root);
   placing = false;
+}
+
+// The game plays a clip's timeline from a label through slot 0x150 of the ObjectInterface (oi, data, label, stop).
+using GotoLabelFn = bool (*)(void *oi, void *data, const char *label, bool stop);
+GotoLabelFn fnGotoLabel;
+
+bool DetourGotoLabel(void *oi, void *data, const char *label, bool stop)
+{
+  bool r = fnGotoLabel(oi, data, label, stop);
+  GValue clip, parent, name, parentName;
+  clip.oi = (void ***)oi;
+  clip.type = VT_DISPLAY_OBJECT; // borrowed from the call, not managed
+  clip.data = data;
+  if (GetMember(clip, "parent", parent) && IsDisplayObject(parent) && GetMember(parent, "name", parentName) && String(parentName) == "TextEffect" &&
+      GetMember(clip, "name", name))
+  {
+    textEffectClip = clip.data;
+    WaitForClips(hudJob);
+  }
+  Release(name);
+  Release(parentName);
+  Release(parent);
+  return r;
+}
+
+// Sprite::AddDisplayObject (the one the movies use): a timeline places a clip.
+using AddDisplayObjectFn = int64_t (*)(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
+AddDisplayObjectFn fnAddDisplayObject;
+
+int64_t DetourAddDisplayObject(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9)
+{
+  int64_t r = fnAddDisplayObject(a1, a2, a3, a4, a5, a6, a7, a8, a9);
+  static std::atomic<unsigned> placements;
+  if (waitingJobs > 0 && placements++ % ASK_EVERY == 0)
+    AskWaitingJobs();
+  return r;
 }
 
 bool DetourGetMember(void *oi, void *data, const char *name, GValue *out, bool isDisplayObject)
@@ -472,7 +696,7 @@ void DetourDeathUpdate(uint8_t *menu)
   void ***wrapper = (void ***)(menu + 0x158);
   if (!fnGetMember || !*wrapper)
     return;
-  Room room = jobRoom[deathJob];
+  Room room = jobRoom[deathJob].Get();
   bool stretch = room.x != 0 || room.y != 0;
   if (!stretch && !deathStretched)
     return;
@@ -504,7 +728,7 @@ void *DetourChildLookup(uint8_t *parent, uint8_t *out, void *name)
     hooked = true;
     void **vtable = clip.oi[0];
     if (!HookSlot(vtable, 4, &DetourGetMember, &fnGetMember) || !HookSlot(vtable, 5, &DetourSetMember, &fnSetMember) ||
-        !HookSlot(vtable, 6, &DetourInvoke, &fnInvoke))
+        !HookSlot(vtable, 6, &DetourInvoke, &fnInvoke) || !HookSlot(vtable, 42, &DetourGotoLabel, &fnGotoLabel))
       LogMessage(LogLevel::Error, false, "Scaleform ObjectInterface hooks failed, HUD Layout Screen Edges disabled");
   }
   return r;
@@ -519,6 +743,8 @@ void InstallHudLayout()
       MH_EnableHook(target) != MH_OK)
     LogMessage(LogLevel::Error, false, "Scaleform child lookup hook failed, HUD Layout Screen Edges disabled");
 
+  while (hudJob < JOB_COUNT && jobs[hudJob].job != JOB_HUD)
+    hudJob++;
   while (deathJob < JOB_COUNT && jobs[deathJob].job != JOB_DEATH)
     deathJob++;
   constexpr uint8_t deathExpected[] = {0x40, 0x53, 0x48, 0x83, 0xEC, 0x20, 0x48, 0x8B, 0xD9};
@@ -526,6 +752,12 @@ void InstallHudLayout()
   if (memcmp(target, deathExpected, sizeof(deathExpected)) != 0 || MH_CreateHook(target, (LPVOID)&DetourDeathUpdate, (LPVOID *)&fnDeathUpdate) != MH_OK ||
       MH_EnableHook(target) != MH_OK)
     LogMessage(LogLevel::Error, false, "Death screen update hook failed, its background stays at 16:9");
+
+  constexpr uint8_t addExpected[] = {0x4C, 0x89, 0x44, 0x24, 0x18, 0x55, 0x56, 0x57, 0x41, 0x54};
+  target = (LPVOID)GetAbsoluteAddress(scaleform_add_display_object_offset);
+  if (memcmp(target, addExpected, sizeof(addExpected)) != 0 || MH_CreateHook(target, (LPVOID)&DetourAddDisplayObject, (LPVOID *)&fnAddDisplayObject) != MH_OK ||
+      MH_EnableHook(target) != MH_OK)
+    LogMessage(LogLevel::Error, false, "Scaleform timeline hook failed, the event text dimming (Sculptor's Idol Found) stays at 16:9");
 }
 
 void MovieViewport(const char *name, float width, float height)
@@ -538,7 +770,14 @@ void MovieViewport(const char *name, float width, float height)
       // the room in every layout but Stretch, which stretches the whole movie
       bool background = jobs[i].job != JOB_HUD && jobs[i].job != JOB_SAVE_ICON;
       bool edges = background ? HUD_LAYOUT != HUD_STRETCH : HUD_LAYOUT == HUD_EDGES;
-      jobRoom[i] = edges ? EdgeRoom(width, height) : Room();
+      jobRoom[i].Set(edges ? EdgeRoom(width, height) : Room());
+      if (jobs[i].job == JOB_HUD)
+      {
+        hudBackdropRoom.Set(HUD_LAYOUT != HUD_STRETCH ? EdgeRoom(width, height) : Room());
+        hudPlaceDue = true;
+      }
+      if (jobs[i].job == JOB_PANELS)
+        WaitForClips(i);
       if (!jobPending[i].exchange(true))
         pendingJobs++;
     }

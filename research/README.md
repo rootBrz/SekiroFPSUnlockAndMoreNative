@@ -83,6 +83,14 @@ A missed background: dump the movie's tree (`tools/scaleform_tree_dump.cpp`), fi
 like the loading screens). If the movie is played by its timeline without the game calling into it (no effect until a
 reload), hook its class's Update as for the death screen.
 
+The event texts (Sculptor's Idol Found, You Died, ...) are clips of `01_000_fe`'s `TextEffect` (`BonfireLit`, `YouDied`, ...),
+each with its dimming as an `instanceN` chain of about `[0,0 2048x1080]`. The game plays one by a label (ObjectInterface slot
+`0x150`: `(oi, data, label, stop)`; slot `0x148` goes to a frame) after queuing its id with `0x8C75F0(id, flag)` (1-22, 13 =
+Sculptor's Idol Found). `BonfireLit` brings its dimming in a few frames after the label, so `src/hud.cpp` hooks the label and
+the engine's timeline placement `Sprite::AddDisplayObject` (`0x2031030`; `0x1E48D80` is a variant that movies do not use) and
+stretches the dimming when it appears. Show any of them without the event: `tools/trigger_text_effect.sh <id> [user@host]`
+(gdb call on a game thread; the idol need not be undiscovered).
+
 ### Clip trees (stage units: x y of the clip, width height)
 
 `01_000_fe` root (looked up by the game): `PlayerHUD` (960, 537; holds `Gauge` with `HP`, `SP`, `SPFrame`, `Damage` the player's

@@ -30,6 +30,7 @@ constexpr uintptr_t fullscreen_refresh_rate_startup_offset = 0x128FFA; // same, 
 constexpr uintptr_t scaleform_manager_update_offset = 0x10FDE10; // updates every movie player once per frame
 constexpr uintptr_t scaleform_player_viewport_offset = 0x10F1F00; // (player, rect): sets the movie viewport to the render resolution
 constexpr uintptr_t death_screen_update_offset = 0xD9CD90; // (menu): per frame update of the death screen (01_210_Dead); the wrapper of its root at +0x158
+constexpr uintptr_t scaleform_add_display_object_offset = 0x2031030; // Sprite::AddDisplayObject: a timeline places a clip, 9 arguments (4 in registers); runs thousands of times a second
 constexpr uintptr_t scaleform_child_lookup_offset = 0xC66B60; // (parent, out, name): the game's lookup of a clip by name, GFx::Value at +0x30
 constexpr uintptr_t animation_culling_offset = 0xF00EEE;     // movss xmm2,[rbx+50h] before the culling call that takes the aspect ratio in xmm3
 constexpr uintptr_t hud_vignette_offset = 0x209C622;         // viewport size of a Scaleform movie, xmm5 = width, xmm7 = height

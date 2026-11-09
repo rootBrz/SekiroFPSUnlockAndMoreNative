@@ -2,6 +2,12 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.9.1
+
+- Fixed the dimming behind the event texts (Sculptor's Idol Found, Shinobi Execution, Dragonrot, ...): it now fills the whole picture on every aspect ratio, also when the picture is taller than 16:9 (16:10, 4:3).
+- Fixed the dimming behind conversations and item notifications, which stopped at the edge of the 16:9 area.
+- Fixed the dark side of the shop menu, which stopped short of the top and bottom edges on a picture taller than 16:9.
+
 ## 1.9.0
 
 - New choice **Quit Game to Desktop** in the confirmation of Quit Game (Yes, Quit Game to Desktop; B or Esc answers No): it saves and then closes the game as soon as the title screen comes up, instead of stopping at the title screen and its network connection.
