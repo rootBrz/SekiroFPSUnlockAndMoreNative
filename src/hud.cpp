@@ -278,7 +278,7 @@ bool Bounds(const GValue &clip, const GValue *space, double &left, double &top, 
 }
 
 // What a clip fills of the stage: all of it (a backdrop), its whole width (a band, e.g. the dimming behind a conversation
-// at the bottom) or its whole height (a panel, e.g. the dark side of a shop menu).
+// at the bottom) or its whole height (a panel, e.g. the dark side of a shop menu: only taller, its content is moved).
 enum class Fill
 {
   Stage,
@@ -334,7 +334,7 @@ bool Fills(const GValue &clip, const GValue &root, Fill fill)
 
 // A clip that fills the stage is stretched to fill the room beyond the stage too, on each side it touches: scaled by
 // the room, with its registration point moved so that the edge that touches goes out by the room. A backdrop touches all
-// four sides, a band the two ends of its width and one side, a panel the two ends of its height and one side. Its size
+// four sides, a band the two ends of its width and one side, a panel only the two ends of its height. Its size
 // and the place of its registration point are taken back to what the movie set, from the stretch applied before.
 // Only the innermost clips that fill the stage are stretched: a clip whose position or size is set by script is no
 // longer animated by its timeline, alpha included, and the vignettes of the death screen (Begin, Loop, WaitEnd) fade
@@ -359,8 +359,11 @@ bool StretchFilling(const GValue &clip, const GValue &root, Room room, Fill fill
   double beforeX = stageLeft <= 20 ? room.x : 0, afterX = stageLeft + stageWidth >= 1900 ? room.x : 0;
   double beforeY = stageTop <= 20 ? room.y : 0, afterY = stageTop + stageHeight >= 1060 ? room.y : 0;
   bool turned = quarters & 1;
+  // a panel is only made taller: the stage's horizontal axis is left alone (not reset either, a backdrop it is part of may have it)
   auto stretchAxis = [&](const char *position, const char *scale, double at, double start, double extent, double stageExtent, double before,
-                         double after, bool forward) {
+                         double after, bool forward, bool horizontal) {
+    if (horizontal && fill == Fill::Panel)
+      return;
     double baseScale = Unshifted(clip, scale);
     if (baseScale == 0)
       return;
@@ -373,9 +376,9 @@ bool StretchFilling(const GValue &clip, const GValue &root, Room room, Fill fill
   };
   // the clip's x axis runs down the stage when turned, to the right (down) after 0 (1) quarters, else the other way
   stretchAxis("x", "scaleX", Number(clip, "x"), left, width, turned ? stageHeight : stageWidth, turned ? beforeY : beforeX, turned ? afterY : afterX,
-              quarters <= 1);
+              quarters <= 1, !turned);
   stretchAxis("y", "scaleY", Number(clip, "y"), top, height, turned ? stageWidth : stageHeight, turned ? beforeX : beforeY, turned ? afterX : afterY,
-              quarters == 0 || quarters == 3);
+              quarters == 0 || quarters == 3, turned);
   return true;
 }
 
@@ -410,7 +413,7 @@ enum Job
   JOB_BACKDROPS,
   JOB_BANDS,
   JOB_NOTICES,
-  JOB_PANELS,
+  JOB_MENU,
 };
 struct MovieJob
 {
@@ -419,7 +422,7 @@ struct MovieJob
 };
 constexpr MovieJob jobs[] = {
     {"01_061_talk.gfx", JOB_BANDS}, // the dimming behind a conversation, a band at the bottom
-    {"03_200_shoptop.gfx", JOB_PANELS}, // the dark side of the shop menu, a panel at the left
+    {"03_200_shoptop.gfx", JOB_MENU}, // the shop menu: a list at the left, its dark side behind
     {"01_000_fe.gfx", JOB_HUD},
     {"01_002_fe_saveicon.gfx", JOB_SAVE_ICON},
     {"02_903_nowloading2.gfx", JOB_LOADING},
@@ -429,7 +432,7 @@ constexpr MovieJob jobs[] = {
     {"01_210_dead.gfx", JOB_DEATH},
     // the semi-transparent black behind the idol menu and the notifications (an item, a skill, an event such as
     // Dragonrot spreading, messages and tutorials)
-    {"03_202_bonfire.gfx", JOB_BACKDROPS},
+    {"03_202_bonfire.gfx", JOB_MENU}, // the idol menu: the same, and the dimming of the stage
     {"02_280_getitem.gfx", JOB_NOTICES},
     {"02_281_getitem_middle.gfx", JOB_NOTICES},
     {"02_282_getitem_high.gfx", JOB_NOTICES},
@@ -570,7 +573,11 @@ void RunJob(size_t index, const GValue &root, Room room)
   case JOB_BANDS:
     StretchBackdrops(root, root, room, false, 4, Fill::Band);
     break;
-  case JOB_PANELS:
+  case JOB_MENU: // the idol and shop menus: the list at the left edge, the dark side behind it taller, the dimming over all
+    if (HUD_LAYOUT == HUD_EDGES)
+      for (const char *path : {"MenuTitle", "Base/StatusBar", "Base/LineHelpBase", "Base/ItemList"})
+        AtPath(root, path, [&](const GValue &clip) { Shift(clip, "x", -room.x); });
+    StretchBackdrops(root, root, room, false, 1);
     if (StretchBackdrops(root, root, room, true, 3, Fill::Panel))
       ClipsFound(index);
     break;
@@ -764,7 +771,7 @@ void MovieViewport(const char *name)
       viewed[i] = true;
       if (jobs[i].job == JOB_HUD)
         hudPlaceDue = true;
-      if (jobs[i].job == JOB_PANELS)
+      if (jobs[i].job == JOB_MENU)
         WaitForClips(i);
       if (!jobPending[i].exchange(true))
         pendingJobs++;

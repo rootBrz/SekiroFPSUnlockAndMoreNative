@@ -3,12 +3,14 @@
 # restart and without touching the save. Calls the game's own request function `0x8C75F0(id, 0)` (RVA, base 0x140000000)
 # on a game thread through gdb: stop on the per frame function 0xA36CC0, run the call on that thread with the return
 # address set to the same breakpoint, restore the registers, detach.
-# Usage: trigger_text_effect.sh <id> [ssh target]      e.g. trigger_text_effect.sh 13 deck@192.168.0.18
+# Usage: trigger_text_effect.sh <id> [ssh target] [flag]      e.g. trigger_text_effect.sh 13 deck@192.168.0.18
+# flag is the second argument of the request (the game's own debug menu passes 1; default 0).
 # Needs gdb and python3 on the machine that runs the game (Steam Deck: both there). Wine signals are ignored (without
 # that SIGUSR1 stops the wrong thread). Do not add watchpoints or leave breakpoints: a killed gdb with a breakpoint
 # inserted crashes the game.
 ID=${1:?id 1..22}
 TARGET=${2:-}
+FLAG=${3:-0}
 GDB_SCRIPT=$(cat <<EOF
 set pagination off
 set confirm off
@@ -28,7 +30,7 @@ gdb.execute('delete')
 gdb.execute('break *0x140A36CC0 thread %d'%T)
 sp=((saved['rsp']-0x400)&~0xF)-8
 gdb.selected_inferior().write_memory(sp,(0x140A36CC0).to_bytes(8,'little'))
-gdb.execute('set \$rsp=%d'%sp); gdb.execute('set \$rcx=$ID'); gdb.execute('set \$rdx=0'); gdb.execute('set \$rip=0x1408C75F0')
+gdb.execute('set \$rsp=%d'%sp); gdb.execute('set \$rcx=$ID'); gdb.execute('set \$rdx=$FLAG'); gdb.execute('set \$rip=0x1408C75F0')
 print("HIJACK thread",T)
 end
 continue
