@@ -2,6 +2,10 @@
 
 Each release needs a `## <version>` section here matching `VERSION`. The release workflow publishes that section as the GitHub release notes and fails if it is missing.
 
+## 1.9.4
+
+- Fixed the dimming behind menu tutorial pop-ups (for example Reflection of Strength) stopping at the edges of the 16:9 area instead of covering the whole picture.
+
 ## 1.9.3
 
 - The idol menu and the shop menu follow HUD Layout Screen Edges: their list and title move to the left edge of the picture instead of staying in the 16:9 area. The dark side behind them is only made taller on a picture taller than 16:9, never wider, and the dimming of the idol menu still covers the whole picture.

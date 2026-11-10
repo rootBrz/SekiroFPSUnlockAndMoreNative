@@ -438,6 +438,7 @@ constexpr MovieJob jobs[] = {
     {"02_282_getitem_high.gfx", JOB_NOTICES},
     {"02_283_getitem_skill.gfx", JOB_NOTICES},
     {"02_284_getitem_event.gfx", JOB_NOTICES},
+    {"02_290_menututorial.gfx", JOB_BACKDROPS},
     {"02_210_fullscreenmsgdialog.gfx", JOB_BACKDROPS},
     {"01_010_messagebox.gfx", JOB_BACKDROPS},
     {"01_011_messagebox_small.gfx", JOB_BACKDROPS},
